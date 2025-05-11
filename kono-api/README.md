@@ -1,16 +1,20 @@
-```txt
-npm install
-npm run dev
+# Kono API
+
+API server written with Hono (name is a coincidence).
+
+```sh
+bun install
+bun dev
 ```
 
-```txt
-npm run deploy
+```sh
+bun deploy
 ```
 
 [For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
 
-```txt
-npm run cf-typegen
+```sh
+bun run cf-typegen
 ```
 
 Pass the `CloudflareBindings` as generics when instantiation `Hono`:
