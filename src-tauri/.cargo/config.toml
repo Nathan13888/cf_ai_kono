@@ -1,0 +1,11 @@
+[build]
+rustflags = ["-C", "debuginfo=2", "-C", "codegen-units=512"]
+
+[net]
+git-fetch-with-cli = true
+
+
+[env]
+RUST_BACKTRACE = "full"
+RUST_LOG = "debug"
+RUST_LOG_STYLE = "always"
