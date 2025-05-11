@@ -8,7 +8,7 @@ pub fn register_desktop_shortcuts(app: &App) -> Result<()> {
   use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
   log::info!("Registering desktop shortcuts");
-  let spotlight_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
+  let spotlight_shortcut = Shortcut::new(Some(Modifiers::ALT), Code::Space);
 
   app.handle().plugin(
     tauri_plugin_global_shortcut::Builder::new()
@@ -17,7 +17,7 @@ pub fn register_desktop_shortcuts(app: &App) -> Result<()> {
         if shortcut == &spotlight_shortcut {
           match event.state() {
             ShortcutState::Pressed => {
-              if let Some(window) = app.get_webview_window(super::spotlight::SPOTLIGHT_LABEL) {
+              if let Some(_window) = app.get_webview_window(super::spotlight::SPOTLIGHT_LABEL) {
                 match app.get_webview_panel(super::spotlight::SPOTLIGHT_LABEL) {
                   Ok(panel) => {
                     if panel.is_visible() {
