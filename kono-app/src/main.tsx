@@ -1,5 +1,6 @@
 import React from "react";
 import App from "./App";
+import Spotlight from "./Spotlight";
 
 import { createRoot } from "react-dom/client";
 
@@ -16,7 +17,7 @@ const root_spotlight = document.getElementById("root-spotlight");
 if (root_spotlight) {
   createRoot(root_spotlight as HTMLElement).render(
     <React.StrictMode>
-      <App />
+      <Spotlight />
     </React.StrictMode>,
   );
 }
