@@ -1,9 +1,34 @@
-import { Hono } from 'hono'
+import { Hono } from "hono";
+import { pinoLogger } from "hono-pino";
 
-const app = new Hono()
+const createLogger = () =>
+  pinoLogger({
+    pino: {
+      level: "debug",
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+        },
+      }, // TODO: Use JSON logging for prod
+    },
+  });
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+const app = new Hono().use(createLogger()).get("/", (c) => {
+  const { logger } = c.var;
 
-export default app
+  const token = c.req.header("Authorization") ?? "";
+  logger.debug({ token });
+
+  // const user = getAuthorizedUser(token);
+  // logger.assign({ user });
+
+  // const posts = getPosts();
+  // logger.assign({ posts });
+
+  logger.setResMessage("Get posts success"); // optional
+
+  return c.text("Hello Hono!");
+});
+
+export default app;
