@@ -2,6 +2,9 @@ import { Hono } from "hono";
 import { pinoLogger } from "hono-pino";
 
 import auth from "@/routes/auth";
+import chat from "@/routes/chat";
+import { getOpenapi } from "@/routes/openapi";
+import { Scalar } from "@scalar/hono-api-reference";
 
 const createLogger = () =>
   pinoLogger({
@@ -36,5 +39,12 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
   });
 
 app.route("/auth", auth);
+app.route("/chat", chat);
+
+const isDevelopment = true; // TODO: Fetch from cloudflare
+if (isDevelopment) {
+  app.get("/openapi", getOpenapi(app));
+  app.get("/scalar", Scalar({ url: "/openapi" }));
+}
 
 export default app;
