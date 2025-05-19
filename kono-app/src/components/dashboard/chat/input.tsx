@@ -20,9 +20,11 @@ export default function ChatInput() {
   const setActiveButton = useChatsStore((state) => state.setActiveButton);
 
   const isStreaming = useChatsStore((state) => state.isStreaming);
+  const streamBuffer = useChatsStore((state) => state.streamBuffer);
   const setStreaming = useChatsStore((state) => state.setStreaming);
   const isMobile = useChatsStore((state) => state.isMobile);
   const addSection = useChatsStore((state) => state.addSection);
+  const setSection = useChatsStore((state) => state.setSection);
 
   // Mount new chat on first load
   useEffect(() => {
@@ -34,13 +36,12 @@ export default function ChatInput() {
   // Fetch chat conversation on id change
 
   // Mutate chat conversation by posting response
+  // TODO: refactor some logic??
   const queryClient = useQueryClient();
   const sendPrompt = useMutation({
     // TODO: support different types of user input
     // TODO: include "target" last message to reconciliate with cloud-client state discrepancies
     mutationFn: async (userMessage: string) => {
-      // TODO: fix animations (eg. vibration)
-
       if (!id) {
         throw new Error("Conversation ID is not defined");
       }
@@ -48,51 +49,107 @@ export default function ChatInput() {
       // Initialize message of user
       const userMessageObj = {
         id: crypto.randomUUID(),
+        thinking: null,
         messages: [
           {
             id: crypto.randomUUID(),
             content: userMessage,
             type: "user",
-            completed: null,
-            newSection: true,
+            completed: true,
           },
         ],
         date: new Date().toISOString(),
         generationTime: new Date().getTime(),
         isRendering: false,
       } as Section;
-      // Add the message to the conversation
       addSection(id, userMessageObj);
 
-      // TODO: impl
+      // TODO: fix animations (eg. vibration)
       // Add a delay before the second vibration
       // setTimeout(() => {
       //   // Add vibration when streaming begins
       //   navigator.vibrate(50);
       // }, 200); // 200ms delay to make it distinct from the first vibration
 
+      // Prepare stream from server
+      const responseSectionId = crypto.randomUUID(); // response from agent
+      const messageId = crypto.randomUUID(); //
+      addSection(id, {
+        id: responseSectionId,
+        thinking: null,
+        messages: [
+          {
+            id: messageId,
+            content: null,
+            type: "agent",
+            completed: null, // TODO: null or false?
+          },
+        ], // no messages to indicate rendering
+        date: new Date().toISOString(),
+        generationTime: new Date().getTime(),
+        // isRendering: true,
+        isRendering: false, // TODO: yeet dis shit
+      });
+      const mockWords = [
+        {
+          id: crypto.randomUUID(),
+          text: "This is ",
+        },
+        {
+          id: crypto.randomUUID(),
+          text: " a test ",
+        },
+        {
+          id: crypto.randomUUID(),
+          text: "message 3",
+        },
+      ];
+
       setStreaming({
-        messageId: "some id here todo",
-        words: [
-          {
-            id: crypto.randomUUID(),
-            text: "This is a test message",
-          },
-          {
-            id: crypto.randomUUID(),
-            text: "This is a test message 2",
-          },
-          {
-            id: crypto.randomUUID(),
-            text: "This is a test message 3",
-          },
-        ],
+        messageId,
+        words: [],
         lastUpdatedAt: new Date().getTime(),
         error: null,
       });
 
-      // sleep for 2 seconds
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Start streaming response from server
+      // TODO: stream server response here
+      for (let i = 0; i < mockWords.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 900));
+        // setStreaming({
+        //   messageId,
+        //   words: mockWords.slice(0, i + 1),
+        //   lastUpdatedAt: new Date().getTime(),
+        //   error: null,
+        // });
+        setSection(id, responseSectionId, {
+          messages: [
+            {
+              id: messageId,
+              content: mockWords
+                .slice(0, i + 1)
+                .reduce((acc, word) => acc + word.text, ""),
+              type: "agent",
+              completed: false,
+            },
+          ],
+          isRendering: false,
+        });
+      }
+
+      // Wrap up streaming
+      setSection(id, responseSectionId, {
+        messages: [
+          {
+            id: messageId,
+            content: "This is a test message",
+            type: "agent",
+            completed: true,
+          },
+        ],
+        // TODO: check this property
+        isRendering: false,
+      });
       setStreaming(null);
 
       // Stream the text
@@ -107,8 +164,26 @@ export default function ChatInput() {
     },
     onError: (error) => {
       console.error("Error sending prompt:", error);
+      // TODO: set error is last section
     },
   });
+
+  // Watch for changes in the stream buffer
+  useEffect(() => {
+    console.warn("Stream buffer changed:", isStreaming, streamBuffer);
+  }, [isStreaming, streamBuffer]);
+
+  // Watch for changes in the input value
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      const newHeight = Math.max(
+        24,
+        Math.min(textareaRef.current.scrollHeight, 160)
+      );
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
 
   const handleInputContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Only focus if clicking directly on the container, not on buttons or other interactive elements

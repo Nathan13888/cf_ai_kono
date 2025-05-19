@@ -1,5 +1,5 @@
 import { useChatsStore } from "@/lib/chat/store";
-import { Message, StreamBuffer } from "@/lib/chat/types";
+import { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { Copy, RefreshCcw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -101,9 +101,19 @@ export default function Chat() {
 
               {!section.isRendering && (
                 <div>
-                  {section.messages.map((message) =>
-                    renderMessage(message, streamBuffer)
-                  )}
+                  {section.messages.map((message) => {
+                    const StreamContent: React.FC = () =>
+                      streamBuffer &&
+                      streamBuffer.id === message.id &&
+                      streamBuffer.words.map((word) => (
+                        <span key={word.id} className="animate-fade-in inline">
+                          {word.text}
+                        </span>
+                      ));
+                    // console.log(streamBuffer);
+
+                    return renderMessage(message, StreamContent);
+                  })}
                 </div>
               )}
             </div>
@@ -116,7 +126,7 @@ export default function Chat() {
 }
 
 // Render a given message
-const renderMessage = (message: Message, streamBuffer: StreamBuffer | null) => {
+const renderMessage = (message: Message, StreamContent: React.FC) => {
   return (
     <div
       key={message.id}
@@ -129,15 +139,17 @@ const renderMessage = (message: Message, streamBuffer: StreamBuffer | null) => {
         className={cn(
           "max-w-[80%] px-4 py-2 rounded-2xl",
           message.type === "user"
-            ? "bg-white border border-gray-200 rounded-br-none"
-            : "text-gray-900"
+            ? "bg-white border border-gray-200 rounded-br-none" // USER
+            : "text-gray-900" // AGENT
+          // TODO: support system
         )}
       >
+        {/* TODO: process "system" messages */}
         {/* For user messages or completed system messages, render without animation */}
         {message.content && (
           <span
             className={
-              message.type === "system" && !message.completed
+              message.type === "agent" && !message.completed
                 ? "animate-fade-in"
                 : ""
             }
@@ -152,22 +164,16 @@ const renderMessage = (message: Message, streamBuffer: StreamBuffer | null) => {
           </span>
         )}
 
-        {/* For streaming messages, render with animation */}
-        {!message.completed && (
+        {
+          // message.type === "agent" && !message.completed &&
           <span className="inline">
-            {streamBuffer &&
-              streamBuffer.id === message.id &&
-              streamBuffer.words.map((word) => (
-                <span key={word.id} className="animate-fade-in inline">
-                  {word.text}
-                </span>
-              ))}
+            <StreamContent />
           </span>
-        )}
+        }
       </div>
 
       {/* Message actions */}
-      {message.type === "system" && message.completed && (
+      {message.type === "agent" && message.completed && (
         <div className="flex items-center gap-2 px-4 mt-1 mb-2">
           <button className="text-gray-400 hover:text-gray-600 transition-colors">
             <RefreshCcw className="h-4 w-4" />
@@ -184,8 +190,10 @@ const renderMessage = (message: Message, streamBuffer: StreamBuffer | null) => {
           <button className="text-gray-400 hover:text-gray-600 transition-colors">
             <ThumbsDown className="h-4 w-4" />
           </button>
+          {/* TODO: support error state */}
         </div>
       )}
+      {/* TODO: support system sate */}
     </div>
   );
 };

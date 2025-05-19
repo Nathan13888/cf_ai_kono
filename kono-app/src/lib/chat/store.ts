@@ -27,6 +27,12 @@ interface ChatsState {
   newChat: () => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
+  setSection: (
+    _id: ConversationID,
+    _sectionId: string,
+    _section: Partial<Omit<Section, "id" | "date" | "generationTime">>
+  ) => void;
+  setTitle: (_id: ConversationID, _title: string) => void;
 
   // Chat input
   activeButton: ActiveButton;
@@ -97,6 +103,55 @@ export const useChatsStore = create<ChatsState>((set) => ({
         lastUpdatedAt: new Date().getTime(),
       },
     }));
+  },
+
+  setSection: (
+    id: ConversationID,
+    sectionId: string,
+    section: Partial<Omit<Section, "id" | "date" | "generationTime">>
+  ) => {
+    set((state) => {
+      // find the section in the current conversation
+      const sections = state.currentConversation?.sections ?? [];
+      const index = sections.findIndex((s) => s.id === sectionId);
+
+      if (index === -1) {
+        console.warn("Section not found:", sectionId);
+        return {};
+      }
+
+      // update the section
+      const updatedSections = [...sections];
+      updatedSections[index] = {
+        ...updatedSections[index],
+        ...section, // overwrite defined properties
+      };
+
+      return {
+        currentConversation: {
+          id,
+          title: state.currentConversation?.title ?? null,
+          sections: updatedSections,
+          lastUpdatedAt: new Date().getTime(),
+        },
+      };
+    });
+  },
+
+  setTitle: (id: ConversationID, title: string) => {
+    set(({ currentConversation }) => {
+      if (!currentConversation) {
+        console.warn("No current conversation to set title for.");
+        return {};
+      }
+
+      return {
+        currentConversation: {
+          ...currentConversation,
+          title,
+        },
+      };
+    });
   },
 
   activeButton: "none",

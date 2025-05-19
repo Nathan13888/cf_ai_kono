@@ -12,6 +12,7 @@ export interface Conversation {
 
 export interface Section {
   id: string;
+  thinking: ThinkingStep[] | null;
   messages: Message[];
 
   date: string;
@@ -19,15 +20,15 @@ export interface Section {
   isRendering: boolean;
 }
 
-export type MessageType = "user" | "system";
+export type MessageType = "user" | "agent" | "system";
 export interface Message {
   id: string;
-  thinking: ThinkingStep[] | null;
   content: Chunk[] | string | null;
   type: MessageType;
 
+  // NOTE: each section should have at most one non-completed message
   completed: boolean | null;
-  newSection: boolean | null;
+  // newSection: boolean | null;
 }
 
 // TODO: fix impl
