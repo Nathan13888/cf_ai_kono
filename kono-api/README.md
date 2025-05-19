@@ -11,8 +11,10 @@ bun install
 # Learn more: <https://developers.cloudflare.com/workers/wrangler/commands/#types>
 bun run cf-typegen
 
-# Initialize schemas
-# bunx @better-auth/cli generate
+# Generate schemas
+bunx @better-auth/cli generate # For Better Auth
+bunx drizzle-kit generate # Generate the migration file
+bunx drizzle-kit migrate # Apply the migration
 
 # Start dev server
 bun dev
