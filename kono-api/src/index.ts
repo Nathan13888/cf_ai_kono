@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { pinoLogger } from "hono-pino";
 
+import auth from "@/routes/auth";
+
 const createLogger = () =>
   pinoLogger({
     pino: {
@@ -14,21 +16,25 @@ const createLogger = () =>
     },
   });
 
-const app = new Hono().use(createLogger()).get("/", (c) => {
-  const { logger } = c.var;
+const app = new Hono<{ Bindings: CloudflareBindings }>()
+  .use(createLogger())
+  .get("/", (c) => {
+    const { logger } = c.var;
 
-  const token = c.req.header("Authorization") ?? "";
-  logger.debug({ token });
+    const token = c.req.header("Authorization") ?? "";
+    logger.debug({ token });
 
-  // const user = getAuthorizedUser(token);
-  // logger.assign({ user });
+    // const user = getAuthorizedUser(token);
+    // logger.assign({ user });
 
-  // const posts = getPosts();
-  // logger.assign({ posts });
+    // const posts = getPosts();
+    // logger.assign({ posts });
 
-  logger.setResMessage("Get posts success"); // optional
+    logger.setResMessage("Get posts success"); // optional
 
-  return c.text("Hello Hono!");
-});
+    return c.text("Hello Hono!");
+  });
+
+app.route("/auth", auth);
 
 export default app;
