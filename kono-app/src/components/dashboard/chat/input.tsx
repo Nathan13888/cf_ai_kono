@@ -334,9 +334,7 @@ export default function ChatInput() {
           <div className="pb-9">
             <Textarea
               ref={textareaRef}
-              placeholder={
-                isStreaming ? "Waiting for response..." : "Ask Anything"
-              }
+              placeholder="Ask Anything"
               className="min-h-[24px] max-h-[160px] w-full rounded-3xl border-0 bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base focus-visible:ring-0 focus-visible:ring-offset-0 text-base pl-2 pr-4 pt-0 pb-0 resize-none overflow-y-auto leading-tight"
               value={inputValue}
               onChange={handleInputChange}
