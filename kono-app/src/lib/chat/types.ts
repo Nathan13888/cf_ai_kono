@@ -2,6 +2,7 @@ export type ConversationID = string;
 
 export interface Conversation {
   id: ConversationID;
+  title: string | null;
   sections: Section[];
 
   // usage metadata
@@ -45,6 +46,9 @@ export interface StreamBuffer {
   id: ConversationID;
   messageId: string;
   words: Chunk[];
-  isRendering: boolean;
-  hasError: string | null;
+  // isRendering: boolean;
+  lastUpdatedAt: number;
+  error: string | null;
 }
+
+export type ActiveButton = "none" | "add" | "deepSearch" | "think";

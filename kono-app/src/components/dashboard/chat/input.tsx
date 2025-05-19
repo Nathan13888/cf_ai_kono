@@ -1,51 +1,112 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatsStore } from "@/lib/chat/store";
+import { ActiveButton, Section } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
-import { useRef, useState } from "react";
-
-type ActiveButton = "none" | "add" | "deepSearch" | "think";
+import { useEffect, useRef, useState } from "react";
 
 export default function ChatInput() {
   const id = useChatsStore((state) => state.currentConversation?.id);
+  const newChat = useChatsStore((state) => state.newChat);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
 
   const [inputValue, setInputValue] = useState("");
   const [hasTyped, setHasTyped] = useState(false);
-  const [activeButton, setActiveButton] = useState<ActiveButton>("none");
+  const activeButton = useChatsStore((state) => state.activeButton);
+  const setActiveButton = useChatsStore((state) => state.setActiveButton);
 
   const isStreaming = useChatsStore((state) => state.isStreaming);
+  const setStreaming = useChatsStore((state) => state.setStreaming);
   const isMobile = useChatsStore((state) => state.isMobile);
   const addSection = useChatsStore((state) => state.addSection);
 
+  // Mount new chat on first load
+  useEffect(() => {
+    if (!id) {
+      newChat();
+    }
+  }, [id, newChat]);
+
+  // Fetch chat conversation on id change
+
   // Mutate chat conversation by posting response
   const queryClient = useQueryClient();
-  const mutation = useMutation({
+  const sendPrompt = useMutation({
     // TODO: support different types of user input
     // TODO: include "target" last message to reconciliate with cloud-client state discrepancies
     mutationFn: async (userMessage: string) => {
-      // Initialize message
-      // TODO: impl
+      // TODO: fix animations (eg. vibration)
 
+      if (!id) {
+        throw new Error("Conversation ID is not defined");
+      }
+
+      // Initialize message of user
+      const userMessageObj = {
+        id: crypto.randomUUID(),
+        messages: [
+          {
+            id: crypto.randomUUID(),
+            content: userMessage,
+            type: "user",
+            completed: null,
+            newSection: true,
+          },
+        ],
+        date: new Date().toISOString(),
+        generationTime: new Date().getTime(),
+        isRendering: false,
+      } as Section;
+      // Add the message to the conversation
+      addSection(id, userMessageObj);
+
+      // TODO: impl
       // Add a delay before the second vibration
-      setTimeout(() => {
-        // Add vibration when streaming begins
-        navigator.vibrate(50);
-      }, 200); // 200ms delay to make it distinct from the first vibration
+      // setTimeout(() => {
+      //   // Add vibration when streaming begins
+      //   navigator.vibrate(50);
+      // }, 200); // 200ms delay to make it distinct from the first vibration
+
+      setStreaming({
+        messageId: "some id here todo",
+        words: [
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message",
+          },
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message 2",
+          },
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message 3",
+          },
+        ],
+        lastUpdatedAt: new Date().getTime(),
+        error: null,
+      });
+
+      // sleep for 2 seconds
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setStreaming(null);
 
       // Stream the text
       // TODO: impl
-
       // Add vibration when streaming ends
-      navigator.vibrate(50);
+      // navigator.vibrate(50);
     },
     onSuccess: () => {
+      console.warn("TODO: onSuccess");
       // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ["chat", id] });
+      queryClient.invalidateQueries({ queryKey: ["conversation", id] });
+    },
+    onError: (error) => {
+      console.error("Error sending prompt:", error);
     },
   });
 
@@ -88,7 +149,7 @@ export default function ChatInput() {
     e.preventDefault();
     if (inputValue.trim() && !isStreaming) {
       // Add vibration when message is submitted
-      navigator.vibrate(50);
+      // navigator.vibrate(50);
 
       const userMessage = inputValue.trim();
 
@@ -114,7 +175,7 @@ export default function ChatInput() {
       }
 
       // Query for response
-      mutation.mutate(userMessage);
+      sendPrompt.mutate(userMessage);
     }
   };
 
@@ -193,6 +254,7 @@ export default function ChatInput() {
           )}
           onClick={handleInputContainerClick}
         >
+          {/* CHAT INPUT */}
           <div className="pb-9">
             <Textarea
               ref={textareaRef}
@@ -205,6 +267,7 @@ export default function ChatInput() {
               onKeyDown={handleKeyDown}
               onFocus={() => {
                 // Ensure the textarea is scrolled into view when focused
+                // TODO: allow user setting
                 if (textareaRef.current) {
                   textareaRef.current.scrollIntoView({
                     behavior: "smooth",
@@ -215,9 +278,11 @@ export default function ChatInput() {
             />
           </div>
 
+          {/* PROMPT OPTIONS */}
           <div className="absolute bottom-3 left-3 right-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              {/* LEFT ISLAND */}
+              <div className="flex items-center select-none space-x-2 ">
                 <Button
                   type="button"
                   variant="outline"
@@ -292,24 +357,28 @@ export default function ChatInput() {
                 </Button>
               </div>
 
-              <Button
-                type="submit"
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "rounded-full h-8 w-8 border-0 flex-shrink-0 transition-all duration-200",
-                  hasTyped ? "bg-black scale-110" : "bg-gray-200"
-                )}
-                disabled={!inputValue.trim() || isStreaming}
-              >
-                <ArrowUp
+              {/* RIGHT ISLAND */}
+              <div className="flex items-center select-none space-x-2">
+                {/* TODO(high): model section */}
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="icon"
                   className={cn(
-                    "h-4 w-4 transition-colors",
-                    hasTyped ? "text-white" : "text-gray-500"
+                    "rounded-full h-8 w-8 border-0 flex-shrink-0 transition-all duration-200",
+                    hasTyped ? "bg-black scale-110" : "bg-gray-200"
                   )}
-                />
-                <span className="sr-only">Submit</span>
-              </Button>
+                  disabled={!inputValue.trim() || isStreaming}
+                >
+                  <ArrowUp
+                    className={cn(
+                      "h-4 w-4 transition-colors",
+                      hasTyped ? "text-white" : "text-gray-500"
+                    )}
+                  />
+                  <span className="sr-only">Submit</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
