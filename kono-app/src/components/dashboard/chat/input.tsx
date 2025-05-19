@@ -1,13 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatsStore } from "@/lib/chat/store";
-import { Section } from "@/lib/chat/types";
+import { ActiveButton, Section } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
-type ActiveButton = "none" | "add" | "deepSearch" | "think";
 
 export default function ChatInput() {
   const id = useChatsStore((state) => state.currentConversation?.id);
@@ -18,16 +16,20 @@ export default function ChatInput() {
 
   const [inputValue, setInputValue] = useState("");
   const [hasTyped, setHasTyped] = useState(false);
-  const [activeButton, setActiveButton] = useState<ActiveButton>("none");
+  const activeButton = useChatsStore((state) => state.activeButton);
+  const setActiveButton = useChatsStore((state) => state.setActiveButton);
 
   const isStreaming = useChatsStore((state) => state.isStreaming);
+  const setStreaming = useChatsStore((state) => state.setStreaming);
   const isMobile = useChatsStore((state) => state.isMobile);
   const addSection = useChatsStore((state) => state.addSection);
 
   // Mount new chat on first load
   useEffect(() => {
-    newChat();
-  }, [newChat]);
+    if (!id) {
+      newChat();
+    }
+  }, [id, newChat]);
 
   // Fetch chat conversation on id change
 
@@ -68,6 +70,31 @@ export default function ChatInput() {
       //   // Add vibration when streaming begins
       //   navigator.vibrate(50);
       // }, 200); // 200ms delay to make it distinct from the first vibration
+
+      setStreaming({
+        messageId: "some id here todo",
+        words: [
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message",
+          },
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message 2",
+          },
+          {
+            id: crypto.randomUUID(),
+            text: "This is a test message 3",
+          },
+        ],
+        lastUpdatedAt: new Date().getTime(),
+        error: null,
+      });
+
+      // sleep for 2 seconds
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setStreaming(null);
+
       // Stream the text
       // TODO: impl
       // Add vibration when streaming ends

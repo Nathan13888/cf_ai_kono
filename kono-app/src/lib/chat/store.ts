@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import { Conversation, ConversationID, Section, StreamBuffer } from "./types";
+import {
+  ActiveButton,
+  Conversation,
+  ConversationID,
+  Section,
+  StreamBuffer,
+} from "./types";
 
 interface ChatsState {
   // Page layout
@@ -12,13 +18,21 @@ interface ChatsState {
   // currentChatId: ConversationID | null;
   currentConversation: Conversation | null;
   isStreaming: boolean;
+  setStreaming: (buffer: Omit<StreamBuffer, "id"> | null) => void;
   streamBuffer: StreamBuffer | null;
   // TODO: chat caching
   // loadedMessages: Map<ConversationID, Conversation>;
 
+  // Chat functions
   newChat: () => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
+
+  // Chat input
+  activeButton: ActiveButton;
+  setActiveButton: (
+    _: ((_: ActiveButton) => ActiveButton) | ActiveButton
+  ) => void;
 }
 
 export const useChatsStore = create<ChatsState>((set) => ({
@@ -55,6 +69,18 @@ export const useChatsStore = create<ChatsState>((set) => ({
     });
   },
 
+  setStreaming: (buffer: Omit<StreamBuffer, "id"> | null) => {
+    set(({ currentConversation }) => ({
+      isStreaming: !!buffer,
+      streamBuffer: buffer
+        ? {
+            id: currentConversation?.id ?? "",
+            ...buffer,
+          }
+        : null,
+    }));
+  },
+
   setConversation: (conversation: Conversation) => {
     // set({ currentChatId: id });
 
@@ -72,4 +98,12 @@ export const useChatsStore = create<ChatsState>((set) => ({
       },
     }));
   },
+
+  activeButton: "none",
+  setActiveButton: (
+    f: ((_prev: ActiveButton) => ActiveButton) | ActiveButton
+  ) =>
+    set(({ activeButton }) => ({
+      activeButton: typeof f === "function" ? f(activeButton) : f,
+    })),
 }));

@@ -63,8 +63,9 @@ export default function ChatInference(props: ChatInterfaceProperties) {
   };
 
   const conversationTitle = useChatsStore(
-    (state) => state.currentConversation?.id
+    (state) => state.currentConversation?.title
   );
+  const newChat = useChatsStore((state) => state.newChat);
 
   return (
     <div
@@ -83,7 +84,12 @@ export default function ChatInference(props: ChatInterfaceProperties) {
             {conversationTitle ? conversationTitle : "New Chat"}
           </h1>
 
-          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full h-8 w-8"
+            onClick={(_) => newChat()}
+          >
             <PenSquare className="h-5 w-5 text-gray-700" />
             <span className="sr-only">New Chat</span>
           </Button>
