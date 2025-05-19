@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kono-api",
   "main": "src/index.ts",
-  "compatibility_date": "2025-05-11"
+  "compatibility_date": "2025-05-11",
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
@@ -21,13 +21,14 @@
   //     "bucket_name": "my-bucket"
   //   }
   // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kono-chat",
+      "database_id": "33308e47-5118-41fc-a0eb-d7acdde82d00",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
   // "ai": {
   //   "binding": "AI"
   // },
