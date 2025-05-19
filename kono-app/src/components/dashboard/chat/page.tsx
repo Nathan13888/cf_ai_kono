@@ -1,13 +1,13 @@
 "use client";
 
-import "./chat.css";
+// import "./chat.css";
 
-import { useRef, useEffect } from "react";
-import { Menu, PenSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useChatsStore } from "@/lib/chat/store";
+import { Menu, PenSquare } from "lucide-react";
+import { useEffect, useRef } from "react";
 import Chat from "./chat";
 import ChatInput from "./input";
-import { useChatsStore } from "@/lib/chat/store";
 
 // Constants for layout calculations to account for the padding values
 const TOP_PADDING = 48; // pt-12 (3rem = 48px)
@@ -62,6 +62,10 @@ export default function ChatInference(props: ChatInterfaceProperties) {
     return viewportHeight - TOP_PADDING - BOTTOM_PADDING - ADDITIONAL_OFFSET;
   };
 
+  const conversationTitle = useChatsStore(
+    (state) => state.currentConversation?.id
+  );
+
   return (
     <div
       ref={mainContainerRef}
@@ -75,7 +79,9 @@ export default function ChatInference(props: ChatInterfaceProperties) {
             <span className="sr-only">Menu</span>
           </Button>
 
-          <h1 className="text-base font-medium text-gray-800">v0 Chat</h1>
+          <h1 className="text-base font-medium text-gray-800">
+            {conversationTitle ? conversationTitle : "New Chat"}
+          </h1>
 
           <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
             <PenSquare className="h-5 w-5 text-gray-700" />

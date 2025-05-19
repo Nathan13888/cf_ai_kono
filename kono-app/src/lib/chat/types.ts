@@ -2,6 +2,7 @@ export type ConversationID = string;
 
 export interface Conversation {
   id: ConversationID;
+  title: string | null;
   sections: Section[];
 
   // usage metadata

@@ -1,5 +1,5 @@
 import { useChatsStore } from "@/lib/chat/store";
-import { Message } from "@/lib/chat/types";
+import { Message, StreamBuffer } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { Copy, RefreshCcw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -17,6 +17,7 @@ export default function Chat() {
     (state) => state.currentConversation?.sections
   );
   const isStreaming = useChatsStore((state) => state.isStreaming);
+  const streamBuffer = useChatsStore((state) => state.streamBuffer);
 
   // Get current chat conversation
   // const {data} = queryOptions({
@@ -71,6 +72,7 @@ export default function Chat() {
       ref={chatContainerRef}
       className="flex-grow pb-32 pt-12 px-4 overflow-y-auto"
     >
+      {/* TODO: improve loading state */}
       {!currentSections && <span>Loading</span>}
       {currentSections && (
         <div className="max-w-3xl mx-auto space-y-4">
@@ -85,21 +87,23 @@ export default function Chat() {
               }
             >
               {/* {section.isRendering && (
-              <div
-                style={
-                  section.isActive && shouldApplyHeight(section.sectionIndex)
-                    ? { height: `${getContentHeight()}px` }
-                    : {}
-                }
-                className="pt-4 flex flex-col justify-start"
-              >
-                {section.messages.map((message) => renderMessage(message))}
-              </div>
-            )} */}
+                <div
+                  style={
+                    section.isActive && shouldApplyHeight(section.sectionIndex)
+                      ? { height: `${getContentHeight()}px` }
+                      : {}
+                  }
+                  className="pt-4 flex flex-col justify-start"
+                >
+                  {section.messages.map((message) => renderMessage(message))}
+                </div>
+              )} */}
 
               {!section.isRendering && (
                 <div>
-                  {section.messages.map((message) => renderMessage(message))}
+                  {section.messages.map((message) =>
+                    renderMessage(message, streamBuffer)
+                  )}
                 </div>
               )}
             </div>
@@ -112,9 +116,7 @@ export default function Chat() {
 }
 
 // Render a given message
-const renderMessage = (message: Message) => {
-  const streamBuffer = useChatsStore((state) => state.streamBuffer);
-
+const renderMessage = (message: Message, streamBuffer: StreamBuffer | null) => {
   return (
     <div
       key={message.id}

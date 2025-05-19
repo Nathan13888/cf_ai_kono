@@ -16,7 +16,7 @@ interface ChatsState {
   // TODO: chat caching
   // loadedMessages: Map<ConversationID, Conversation>;
 
-  newChat: (_id: ConversationID) => void;
+  newChat: () => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
 }
@@ -37,15 +37,22 @@ export const useChatsStore = create<ChatsState>((set) => ({
   streamBuffer: null as StreamBuffer | null,
   // loadedMessages: new Map<ConversationID, Conversation>(),
 
-  newChat: (id: ConversationID) => {
-    set((_) => ({
-      // currentChatId: id,
-      currentConversation: {
-        id,
-        sections: [],
-        lastUpdatedAt: null,
-      } satisfies Conversation,
-    }));
+  newChat: () => {
+    set((_) => {
+      // TODO: register with server
+      const id = crypto.randomUUID() as ConversationID;
+
+      console.debug("Creating new chat:", id);
+      return {
+        // currentChatId: id,
+        currentConversation: {
+          id,
+          title: null,
+          sections: [],
+          lastUpdatedAt: null,
+        } satisfies Conversation,
+      };
+    });
   },
 
   setConversation: (conversation: Conversation) => {
@@ -59,6 +66,7 @@ export const useChatsStore = create<ChatsState>((set) => ({
     set((state) => ({
       currentConversation: {
         id,
+        title: state.currentConversation?.title ?? null,
         sections: [...(state.currentConversation?.sections ?? []), section],
         lastUpdatedAt: new Date().getTime(),
       },
