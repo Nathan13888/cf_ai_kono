@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatsStore } from "@/lib/chat/store";
-import { ActiveButton, Section } from "@/lib/chat/types";
+import type { ActiveButton, Section } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
@@ -30,6 +30,7 @@ export default function ChatInput() {
   useEffect(() => {
     if (!id) {
       newChat();
+      console.log("New chat created:", id);
     }
   }, [id, newChat]);
 
@@ -97,7 +98,7 @@ export default function ChatInput() {
         },
         {
           id: crypto.randomUUID(),
-          text: " a test ",
+          text: " a texxxt ",
         },
         {
           id: crypto.randomUUID(),
