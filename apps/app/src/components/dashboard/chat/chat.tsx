@@ -181,18 +181,22 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
           >
             <RefreshCcw className="h-4 w-4" />
           </button>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
             <Copy className="h-4 w-4" />
           </button>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
             <Share2 className="h-4 w-4" />
           </button>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+          {/* <button
+            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
             <ThumbsUp className="h-4 w-4" />
           </button>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
             <ThumbsDown className="h-4 w-4" />
-          </button>
+          </button> */}
           {/* TODO: support error state */}
         </div>
       )}
