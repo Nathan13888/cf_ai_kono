@@ -37,3 +37,7 @@ bun deploy
 ## Obtaining API Keys
 
 - Google AI Studio (e.g. Gemini): <https://aistudio.google.com/apikey>
+
+## Pricing
+
+- Google Generative AI: <https://ai.google.dev/gemini-api/docs/pricing>

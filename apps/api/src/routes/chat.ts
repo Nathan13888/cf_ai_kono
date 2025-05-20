@@ -11,7 +11,7 @@ import { ollama } from "ollama-ai-provider";
 function modelIdToLM(modelId: ModelId): LanguageModel {
   switch (modelId) {
     case "qwen3:1.7b":
-      return ollama("qwen3:1.7b");
+      return ollama("qwen3:1.7b"); // TODO: Make the API key to a URL by env variable to support remote servers
     case "gemini-2.5-flash-preview-05-20":
       return google("gemini-2.5-flash-preview-05-20");
     default:
@@ -90,18 +90,10 @@ const app = new Hono().post(
     console.log("query", query); // TODO
     console.log("body", body); // TODO
     const model = modelIdToLM(query.modelId);
-    // "gemini-2.5-pro-preview-05-06"
-    // "gemini-2.0-flash"
-
-    // return c.text(
-    //   await generateText({
-    //     model: model,
-    //     messages: body.messages,
-    //   }).then((result) => result.text)
-    // );
 
     const result = await streamText({
       model: model,
+      // system: "", // TODO: Make system prompt configurable
       messages: body.messages,
     });
     const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
