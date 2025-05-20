@@ -388,6 +388,7 @@ export default function ChatInput() {
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              autoFocus
               onFocus={() => {
                 // Ensure the textarea is scrolled into view when focused
                 // TODO: allow user setting
