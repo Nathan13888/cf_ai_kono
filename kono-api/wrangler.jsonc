@@ -3,9 +3,9 @@
   "name": "kono-api",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-11",
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },

@@ -1,8 +1,42 @@
+import { Type } from "@sinclair/typebox";
 import { streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
+import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
 import { ollama } from "ollama-ai-provider";
+
+const chatRequestSchema = Type.Object({
+  messages: Type.Array(
+    Type.Object({
+      role: Type.Union([Type.Literal("user"), Type.Literal("assistant")]),
+      content: Type.String(),
+    })
+  ), // TODO: Make this a bigger subset to match AI SDK capabilities
+});
+
+const chatQuerySchema = Type.Object({
+  model: Type.Union([Type.Literal("qwen3:1.7b")]), // TODO: Add more models later
+  // temperature: Type.Optional(Type.Number()),
+  // top_p: Type.Optional(Type.Number()),
+  // max_tokens: Type.Optional(Type.Number()),
+  // stop: Type.Optional(Type.String()),
+  // stream: Type.Optional(Type.Boolean()),
+  // presence_penalty: Type.Optional(Type.Number()),
+  // frequency_penalty: Type.Optional(Type.Number()),
+  // logit_bias: Type.Optional(Type.String()),
+  // user: Type.Optional(Type.String()),
+  // n: Type.Optional(Type.Number()),
+});
+// .openapi({
+//   ref: "Query",
+//   description: "Query parameters for the chat endpoint",
+//   example: {
+//     model: "qwen3:1.7b",
+//   },
+// });
+
+const chatResponseSchema = Type.String();
 
 const app = new Hono();
 // TODO
@@ -10,15 +44,74 @@ app.get(
   "/",
   describeRoute({
     summary: "Chat test",
-    validateResponse: true,
+    description: "Chat test",
+    // parameters:
+    requestBody: {
+      description: "LLM messages",
+      content: {
+        "application/json": {
+          schema: chatRequestSchema,
+        },
+      },
+      required: true,
+    },
+    // validateResponse: true,
+    responses: {
+      200: {
+        description: "LLM Output",
+        content: {
+          "text/plain": {
+            schema: resolver(chatResponseSchema),
+          },
+        },
+      },
+    },
   }),
+  validator("query", chatQuerySchema),
+  validator("json", chatRequestSchema),
   async (c) => {
-    const model = ollama("qwen3:1.7b");
+    const query = c.req.valid("query");
+    const body = c.req.valid("json");
+    console.log("query", query);
+    console.log("body", body);
+    const model = ollama(query.model);
+
+    // return c.text(
+    //   await generateText({
+    //     model: model,
+    //     messages: body.messages,
+    //   }).then((result) => result.text)
+    // );
+
     const result = await streamText({
       model: model,
-      prompt: "How are you?",
+      // messages: body.messages,
+      prompt: "fdfs",
     });
     const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
+
+    c.header("Content-Encoding", "Identity");
+    return stream(
+      c,
+      async (stream) => {
+        const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
+        for await (const textPart of textStream) {
+          message.push(textPart);
+          console.log("message:", message);
+          await stream.write(textPart);
+        }
+        // /// Write a text with a new line ('\n').
+        // await stream.writeln("Hello");
+        // // Wait 1 second.
+        // await stream.sleep(5000);
+        // // Write a text without a new line.
+        // await stream.write(`Hosdfno.`);
+      },
+      async (err, stream) => {
+        stream.writeln("An error occurred!");
+        console.error(err);
+      }
+    );
 
     // return streamSSE(c, async (stream) => {
     //   while (true) {
@@ -31,23 +124,6 @@ app.get(
     //     await stream.sleep(1000);
     //   }
     // });
-
-    c.header("Content-Encoding", "Identity");
-    return stream(c, async (stream) => {
-      const messages = []; // TODO: push it out occasionally to DB and ensure it ends with another update
-      for await (const textPart of textStream) {
-        messages.push(textPart);
-        await stream.write(textPart);
-      }
-      // /// Write a text with a new line ('\n').
-      // await stream.writeln("Hello");
-      // // Wait 1 second.
-      // await stream.sleep(5000);
-      // // Write a text without a new line.
-      // await stream.write(`Hosdfno.`);
-    });
-
-    // return c.text(`LLM Output: ${JSON.stringify(messages)}`);
   }
 );
 
