@@ -1,10 +1,23 @@
+import { google } from '@ai-sdk/google';
+import { type ModelId, modelIdSchema } from "@kono/models";
 import { Type } from "@sinclair/typebox";
-import { streamText } from "ai";
+import { type LanguageModel, streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
 import { ollama } from "ollama-ai-provider";
+
+function modelIdToLM(modelId: ModelId): LanguageModel {
+  switch (modelId) {
+    case "qwen3:1.7b":
+      return ollama("qwen3:1.7b");
+    case "gemini-2.5-flash-preview-05-20":
+      return google("gemini-2.5-flash-preview-05-20");
+    default:
+      throw new Error("Unknown model ID");
+  }
+}
 
 const chatRequestSchema = Type.Object({
   messages: Type.Array(
@@ -20,7 +33,7 @@ const chatRequestSchema = Type.Object({
 });
 
 const chatQuerySchema = Type.Object({
-  model: Type.Union([Type.Literal("qwen3:1.7b")]), // TODO: Add more models later
+  modelId: modelIdSchema, // TODO: Add more models later
   // temperature: Type.Optional(Type.Number()),
   // top_p: Type.Optional(Type.Number()),
   // max_tokens: Type.Optional(Type.Number()),
@@ -76,7 +89,9 @@ const app = new Hono().post(
     const body = c.req.valid("json");
     console.log("query", query); // TODO
     console.log("body", body); // TODO
-    const model = ollama(query.model); // TODO: Replace ollama and make a model switcher
+    const model = modelIdToLM(query.modelId);
+    // "gemini-2.5-pro-preview-05-06"
+    // "gemini-2.0-flash"
 
     // return c.text(
     //   await generateText({
@@ -113,6 +128,7 @@ const app = new Hono().post(
         console.error(err);
       }
     );
+    // TODO: Clean up properly if either client or model API drops
 
     // return streamSSE(c, async (stream) => {
     //   while (true) {

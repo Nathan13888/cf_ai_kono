@@ -6,6 +6,7 @@
     "apps/*"
   ],
   "dependencies": {
+    "@sinclair/typebox": "^0.34.33",
     "hono": "^4.7.10"
   }
 }

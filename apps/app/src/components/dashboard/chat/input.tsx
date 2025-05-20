@@ -141,7 +141,8 @@ export default function ChatInput() {
       console.log("Sending messages:", messages);
       const response = await client.chat.$post({
         query: {
-          model: "qwen3:1.7b",
+          // modelId: "gemini-2.5-flash-preview-05-20",
+          modelId: "qwen3:1.7b",
         },
         json: {
           messages: messages,
