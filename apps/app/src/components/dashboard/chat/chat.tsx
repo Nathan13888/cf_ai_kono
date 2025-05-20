@@ -1,3 +1,4 @@
+import MessageRenderer from "@/components/ui/chat-renderer";
 import { useChatsStore } from "@/lib/chat/store";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
@@ -126,6 +127,7 @@ export default function Chat() {
 }
 
 // Render a given message
+// TODO: Render custom `<think>` element properly
 const renderMessage = (message: Message, StreamContent: React.FC) => {
   return (
     <div
@@ -141,32 +143,29 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
           message.type === "user"
             ? "bg-white border border-gray-200 rounded-br-none" // USER
             : "text-gray-900" // AGENT
-          // TODO: support system
         )}
       >
-        {/* TODO: process "system" messages */}
-        {/* For user messages or completed system messages, render without animation */}
         {message.content && (
           <span
             className={cn(
-              "whitespace-pre-wrap", // Add this to preserve newlines
               message.type === "assistant" && !message.completed
                 ? "animate-fade-in"
                 : ""
             )}
           >
-            {message.content instanceof Array
-              ? message.content.map((chunk) => (
-                  <span key={chunk.id} className="inline whitespace-pre-wrap">
-                    {chunk.text}
-                  </span>
-                ))
-              : message.content}
+            {Array.isArray(message.content) ? (
+              message.content.map((chunk) => (
+                <span key={chunk.id} className="inline">
+                  <MessageRenderer content={chunk.text} />
+                </span>
+              ))
+            ) : (
+              <MessageRenderer content={message.content} />
+            )}
           </span>
         )}
 
         {
-          // message.type === "assistant" && !message.completed &&
           <span className="inline">
             <StreamContent />
           </span>
@@ -176,7 +175,10 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
       {/* Message actions */}
       {message.type === "assistant" && message.completed && (
         <div className="flex items-center gap-2 px-4 mt-1 mb-2">
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            type="button"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
             <RefreshCcw className="h-4 w-4" />
           </button>
           <button className="text-gray-400 hover:text-gray-600 transition-colors">
