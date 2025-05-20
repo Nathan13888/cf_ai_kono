@@ -158,11 +158,10 @@ export default function ChatInput() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log("Stream finished"); // TODO: Remove
           break;
         }
         const chunk: string = decoder.decode(value, { stream: true });
-        console.log("Received chunk:", chunk); // TODO: Remove
+        // console.log("Received chunk:", chunk);
         streamingMessage += chunk;
 
         // Append chunk to section
@@ -187,6 +186,8 @@ export default function ChatInput() {
       }
 
       // TODO: Detect if response was non-200, it should display as an error.
+
+      console.log("Final streaming message:", streamingMessage); // TODO: Remove
 
       // Wrap up streaming
       setSection(id, responseSectionId, {

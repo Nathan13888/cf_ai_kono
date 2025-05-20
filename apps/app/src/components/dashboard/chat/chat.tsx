@@ -148,15 +148,16 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
         {/* For user messages or completed system messages, render without animation */}
         {message.content && (
           <span
-            className={
+            className={cn(
+              "whitespace-pre-wrap", // Add this to preserve newlines
               message.type === "assistant" && !message.completed
                 ? "animate-fade-in"
                 : ""
-            }
+            )}
           >
             {message.content instanceof Array
               ? message.content.map((chunk) => (
-                  <span key={chunk.id} className="inline">
+                  <span key={chunk.id} className="inline whitespace-pre-wrap">
                     {chunk.text}
                   </span>
                 ))
