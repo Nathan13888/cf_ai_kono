@@ -20,7 +20,7 @@ export interface Section {
   isRendering: boolean;
 }
 
-export type MessageType = "user" | "agent" | "system";
+export type MessageType = "user" | "assistant" | "system";
 export interface Message {
   id: string;
   content: Chunk[] | string | null;

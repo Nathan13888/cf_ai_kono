@@ -1,5 +1,11 @@
 {
-  "name": "kono-api",
+  "name": "@kono/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
@@ -16,7 +22,7 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "drizzle-typebox": "^0.3.2",
-    "hono": "^4.7.9",
+    "hono": "*",
     "hono-openapi": "^0.4.8",
     "hono-pino": "^0.8.0",
     "ollama-ai-provider": "^1.2.0"
@@ -25,6 +31,6 @@
     "@types/node": "^22.15.19",
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.19.4",
-    "wrangler": "^4.4.0"
+    "wrangler": "^4.16.0"
   }
 }

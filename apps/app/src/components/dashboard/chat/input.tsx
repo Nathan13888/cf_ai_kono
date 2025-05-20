@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatsStore } from "@/lib/chat/store";
-import type { ActiveButton, Section } from "@/lib/chat/types";
+import type {
+  ActiveButton,
+  Chunk,
+  MessageType,
+  Section,
+} from "@/lib/chat/types";
+import { client } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
@@ -23,6 +29,9 @@ export default function ChatInput() {
   const streamBuffer = useChatsStore((state) => state.streamBuffer);
   const setStreaming = useChatsStore((state) => state.setStreaming);
   const isMobile = useChatsStore((state) => state.isMobile);
+  const currentSections = useChatsStore(
+    (state) => state.currentConversation?.sections
+  );
   const addSection = useChatsStore((state) => state.addSection);
   const setSection = useChatsStore((state) => state.setSection);
 
@@ -82,7 +91,7 @@ export default function ChatInput() {
           {
             id: messageId,
             content: null,
-            type: "agent",
+            type: "assistant",
             completed: null, // TODO: null or false?
           },
         ], // no messages to indicate rendering
@@ -91,20 +100,6 @@ export default function ChatInput() {
         // isRendering: true,
         isRendering: false, // TODO: yeet dis shit
       });
-      const mockWords = [
-        {
-          id: crypto.randomUUID(),
-          text: "This is ",
-        },
-        {
-          id: crypto.randomUUID(),
-          text: " a texxxt ",
-        },
-        {
-          id: crypto.randomUUID(),
-          text: "message 3",
-        },
-      ];
 
       setStreaming({
         messageId,
@@ -113,38 +108,92 @@ export default function ChatInput() {
         error: null,
       });
 
-      // Start streaming response from server
-      // TODO: stream server response here
-      for (let i = 0; i < mockWords.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 900));
+      // Hit chat endpoint
+      // Prepare request
+      const messages =
+        currentSections?.flatMap(
+          (section) =>
+            section.messages
+              .map((message) => {
+                if (message?.content) {
+                  let content = "";
+                  if (typeof message.content === "string") {
+                    content = message.content;
+                  } else if (Array.isArray(message.content)) {
+                    content = message.content
+                      .map((chunk: Chunk) => chunk.text)
+                      .join("");
+                  }
+                  return {
+                    role: message.type,
+                    content: content,
+                  };
+                }
+
+                return undefined;
+              })
+              .filter((i) => i !== undefined) // Filter out undefined values
+        ) ?? [];
+      messages.push({
+        role: "user" as MessageType,
+        content: userMessage,
+      });
+      console.log("Sending messages:", messages);
+      const response = await client.chat.$post({
+        query: {
+          model: "qwen3:1.7b",
+        },
+        json: {
+          messages: messages,
+        },
+      });
+      // Process stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        throw new Error(`Failed to get reader from response: ${response}`);
+      }
+      let streamingMessage = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.log("Stream finished"); // TODO: Remove
+          break;
+        }
+        const chunk: string = decoder.decode(value, { stream: true });
+        console.log("Received chunk:", chunk); // TODO: Remove
+        streamingMessage += chunk;
+
+        // Append chunk to section
+        setSection(id, responseSectionId, {
+          messages: [
+            {
+              id: messageId,
+              content: streamingMessage,
+              type: "assistant",
+              completed: false,
+            },
+          ],
+          isRendering: false,
+        });
+
         // setStreaming({
         //   messageId,
         //   words: mockWords.slice(0, i + 1),
         //   lastUpdatedAt: new Date().getTime(),
         //   error: null,
         // });
-        setSection(id, responseSectionId, {
-          messages: [
-            {
-              id: messageId,
-              content: mockWords
-                .slice(0, i + 1)
-                .reduce((acc, word) => acc + word.text, ""),
-              type: "agent",
-              completed: false,
-            },
-          ],
-          isRendering: false,
-        });
       }
+
+      // TODO: Detect if response was non-200, it should display as an error.
 
       // Wrap up streaming
       setSection(id, responseSectionId, {
         messages: [
           {
             id: messageId,
-            content: "This is a test message",
-            type: "agent",
+            content: streamingMessage,
+            type: "assistant",
             completed: true,
           },
         ],

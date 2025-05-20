@@ -1,4 +1,4 @@
-import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
+import { type DrizzleD1Database, drizzle } from "drizzle-orm/d1";
 import { createMiddleware } from "hono/factory";
 
 interface DbBindings {

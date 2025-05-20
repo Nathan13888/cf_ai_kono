@@ -1,0 +1,11 @@
+{
+  "name": "kono-chat",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "dependencies": {
+    "hono": "^4.7.10"
+  }
+}

@@ -1,5 +1,5 @@
 import { useChatsStore } from "@/lib/chat/store";
-import { Message } from "@/lib/chat/types";
+import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { Copy, RefreshCcw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -149,7 +149,7 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
         {message.content && (
           <span
             className={
-              message.type === "agent" && !message.completed
+              message.type === "assistant" && !message.completed
                 ? "animate-fade-in"
                 : ""
             }
@@ -165,7 +165,7 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
         )}
 
         {
-          // message.type === "agent" && !message.completed &&
+          // message.type === "assistant" && !message.completed &&
           <span className="inline">
             <StreamContent />
           </span>
@@ -173,7 +173,7 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
       </div>
 
       {/* Message actions */}
-      {message.type === "agent" && message.completed && (
+      {message.type === "assistant" && message.completed && (
         <div className="flex items-center gap-2 px-4 mt-1 mb-2">
           <button className="text-gray-400 hover:text-gray-600 transition-colors">
             <RefreshCcw className="h-4 w-4" />

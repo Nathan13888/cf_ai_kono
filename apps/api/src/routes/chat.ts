@@ -9,7 +9,11 @@ import { ollama } from "ollama-ai-provider";
 const chatRequestSchema = Type.Object({
   messages: Type.Array(
     Type.Object({
-      role: Type.Union([Type.Literal("user"), Type.Literal("assistant")]),
+      role: Type.Union([
+        Type.Literal("user"),
+        Type.Literal("assistant"),
+        Type.Literal("system"),
+      ]),
       content: Type.String(),
     })
   ), // TODO: Make this a bigger subset to match AI SDK capabilities
@@ -38,9 +42,7 @@ const chatQuerySchema = Type.Object({
 
 const chatResponseSchema = Type.String();
 
-const app = new Hono();
-// TODO
-app.get(
+const app = new Hono().post(
   "/",
   describeRoute({
     summary: "Chat test",
@@ -72,9 +74,9 @@ app.get(
   async (c) => {
     const query = c.req.valid("query");
     const body = c.req.valid("json");
-    console.log("query", query);
-    console.log("body", body);
-    const model = ollama(query.model);
+    console.log("query", query); // TODO
+    console.log("body", body); // TODO
+    const model = ollama(query.model); // TODO: Replace ollama and make a model switcher
 
     // return c.text(
     //   await generateText({
@@ -85,8 +87,7 @@ app.get(
 
     const result = await streamText({
       model: model,
-      // messages: body.messages,
-      prompt: "fdfs",
+      messages: body.messages,
     });
     const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
 
@@ -97,7 +98,7 @@ app.get(
         const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
         for await (const textPart of textStream) {
           message.push(textPart);
-          console.log("message:", message);
+          // console.log("message:", message);
           await stream.write(textPart);
         }
         // /// Write a text with a new line ('\n').
