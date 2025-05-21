@@ -8,6 +8,7 @@ import type {
   StreamBuffer,
 } from "./types";
 
+// TODO: refactor name
 interface ChatsState {
   // Page layout
   isMobile: boolean | null;
@@ -35,7 +36,7 @@ interface ChatsState {
   setSection: (
     _id: ConversationID,
     _sectionId: string,
-    _section: Partial<Omit<Section, "id" | "date" | "generationTime">>
+    _f: (_section: Section) => Partial<Omit<Section, "id" | "createdAt">>
   ) => void;
   setTitle: (_id: ConversationID, _title: string) => void;
 
@@ -122,7 +123,7 @@ export const useChatsStore = create<ChatsState>((set) => ({
   setSection: (
     id: ConversationID,
     sectionId: string,
-    section: Partial<Omit<Section, "id" | "date" | "generationTime">>
+    f: (_section: Section) => Partial<Omit<Section, "id" | "createdAt">>
   ) => {
     set((state) => {
       // find the section in the current conversation
@@ -138,7 +139,7 @@ export const useChatsStore = create<ChatsState>((set) => ({
       const updatedSections = [...sections];
       updatedSections[index] = {
         ...updatedSections[index],
-        ...section, // overwrite defined properties
+        ...f(updatedSections[index]), // overwrite defined properties
       };
 
       return {

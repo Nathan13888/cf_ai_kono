@@ -15,7 +15,7 @@ export interface Section {
   thinking: ThinkingStep[] | null;
   messages: Message[];
 
-  date: string;
+  createdAt: number;
   generationTime: number | null;
   isRendering: boolean;
 }

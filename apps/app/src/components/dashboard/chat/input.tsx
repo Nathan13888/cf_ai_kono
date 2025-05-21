@@ -88,15 +88,15 @@ export default function ChatInput() {
             completed: true,
           },
         ],
-        date: new Date().toISOString(),
-        generationTime: new Date().getTime(),
+        generationTime: null,
+        createdAt: Date.now(),
         isRendering: false,
-      } as Section;
+      } satisfies Section;
       addSection(id, userMessageObj);
 
       // Prepare stream from server
       const responseSectionId = crypto.randomUUID(); // response from agent
-      const messageId = crypto.randomUUID(); //
+      const messageId = crypto.randomUUID(); // message in response
       addSection(id, {
         id: responseSectionId,
         thinking: null,
@@ -108,11 +108,10 @@ export default function ChatInput() {
             completed: null, // TODO: null or false?
           },
         ], // no messages to indicate rendering
-        date: new Date().toISOString(),
-        generationTime: new Date().getTime(),
-        // isRendering: true,
+        generationTime: null,
+        createdAt: Date.now(),
         isRendering: false, // TODO: yeet dis shit
-      });
+      } satisfies Section);
 
       setStreaming({
         messageId,
@@ -175,7 +174,7 @@ export default function ChatInput() {
         streamingMessage += chunk;
 
         // Append chunk to section
-        setSection(id, responseSectionId, {
+        setSection(id, responseSectionId, (old) => ({
           messages: [
             {
               id: messageId,
@@ -184,8 +183,9 @@ export default function ChatInput() {
               completed: false,
             },
           ],
-          isRendering: false,
-        });
+          generationTime: Date.now() - old.createdAt,
+          isRendering: false, // TODO: fix the rendering shit
+        }));
       }
 
       // TODO: Detect if response was non-200, it should display as an error.
@@ -193,7 +193,7 @@ export default function ChatInput() {
       console.log("Final streaming message:", streamingMessage); // TODO: Remove
 
       // Wrap up streaming
-      setSection(id, responseSectionId, {
+      setSection(id, responseSectionId, (old) => ({
         messages: [
           {
             id: messageId,
@@ -202,9 +202,9 @@ export default function ChatInput() {
             completed: true,
           },
         ],
-        // TODO: check this property
+        generationTime: Date.now() - old.createdAt,
         isRendering: false,
-      });
+      }));
     },
     onSuccess: () => {
       console.warn("TODO: onSuccess");
@@ -408,7 +408,7 @@ export default function ChatInput() {
               ref={textareaRef}
               placeholder="Ask Anything"
               className={cn(
-                "min-h-[24px] max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
+                "min-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
                 "outline-none focus:outline-none focus-visible:outline-none",
                 "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
                 "focus:border-0 focus-visible:border-0",
@@ -523,7 +523,7 @@ export default function ChatInput() {
                     focusTextarea();
                   }}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Select a model" />
                     <SelectValue>
                       {selectedModelDetails && (
