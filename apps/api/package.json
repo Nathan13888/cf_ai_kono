@@ -11,7 +11,8 @@
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "wrangler d1 migrations apply kono-chat"
+    "db:migrate": "wrangler d1 migrations apply kono-chat",
+    "db:view": "sqlite3 $(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -type f -name '*.sqlite' -print -quit)"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.11",

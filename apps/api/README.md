@@ -43,6 +43,12 @@ Deploy application:
 bun deploy
 ```
 
+View local D1 database by Wrangler:
+
+```sh
+bun run db:view
+```
+
 ## Obtaining API Keys
 
 - Google AI Studio (e.g. Gemini): <https://aistudio.google.com/apikey>
