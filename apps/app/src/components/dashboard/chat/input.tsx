@@ -383,7 +383,7 @@ export default function ChatInput() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-50">
+    <>
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
         <div
           ref={inputContainerRef}
@@ -555,6 +555,6 @@ export default function ChatInput() {
           </div>
         </div>
       </form>
-    </div>
+    </>
   );
 }

@@ -2,10 +2,10 @@ import MessageRenderer from "@/components/ui/chat-renderer";
 import { useChatsStore } from "@/lib/chat/store";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
-import { Copy, RefreshCcw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Copy, Loader, RefreshCcw, Share2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-export default function Chat() {
+export default function Chat({ className }: { className?: string }) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const newSectionRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,14 +69,14 @@ export default function Chat() {
   }, [isStreaming, isMobile]);
 
   return (
-    <div
-      ref={chatContainerRef}
-      className="flex-grow pb-32 pt-12 px-4 overflow-y-auto"
-    >
+    <div ref={chatContainerRef} className={cn("relative flex-1", className)}>
       {/* TODO: improve loading state */}
       {!currentSections && <span>Loading</span>}
       {currentSections && (
-        <div className="max-w-3xl mx-auto space-y-4">
+        <div className="h-full max-w-3xl mx-auto space-y-4 ">
+          <div className="h-12" />
+
+          {/* Chat Sections */}
           {currentSections?.map((section, sectionIndex) => (
             <div
               key={section.id}
@@ -94,7 +94,7 @@ export default function Chat() {
                       ? { height: `${getContentHeight()}px` }
                       : {}
                   }
-                  className="pt-4 flex flex-col justify-start"
+                  className="flex flex-col justify-start pt-4"
                 >
                   {section.messages.map((message) => renderMessage(message))}
                 </div>
@@ -107,7 +107,7 @@ export default function Chat() {
                       streamBuffer &&
                       streamBuffer.id === message.id &&
                       streamBuffer.words.map((word) => (
-                        <span key={word.id} className="animate-fade-in inline">
+                        <span key={word.id} className="inline animate-fade-in">
                           {word.text}
                         </span>
                       ));
@@ -119,7 +119,14 @@ export default function Chat() {
               )}
             </div>
           ))}
+          {
+            // Loading indicator spinner
+            isStreaming && <Loader className="animate-spin" />
+          }
           <div ref={messagesEndRef} />
+
+          {/* NOTE: placed beneath on purpose */}
+          <div className="h-8" />
         </div>
       )}
     </div>
@@ -177,25 +184,29 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
         <div className="flex items-center gap-2 px-4 mt-1 mb-2">
           <button
             type="button"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 transition-colors hover:text-gray-600"
           >
-            <RefreshCcw className="h-4 w-4" />
+            <RefreshCcw className="w-4 h-4" />
           </button>
           <button
-            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <Copy className="h-4 w-4" />
+            type="button"
+            className="text-gray-400 transition-colors hover:text-gray-600"
+          >
+            <Copy className="w-4 h-4" />
           </button>
           <button
-            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <Share2 className="h-4 w-4" />
+            type="button"
+            className="text-gray-400 transition-colors hover:text-gray-600"
+          >
+            <Share2 className="w-4 h-4" />
           </button>
           {/* <button
-            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ThumbsUp className="h-4 w-4" />
+            type="button" className="text-gray-400 transition-colors hover:text-gray-600">
+            <ThumbsUp className="w-4 h-4" />
           </button>
           <button
-            type="button" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ThumbsDown className="h-4 w-4" />
+            type="button" className="text-gray-400 transition-colors hover:text-gray-600">
+            <ThumbsDown className="w-4 h-4" />
           </button> */}
           {/* TODO: support error state */}
         </div>

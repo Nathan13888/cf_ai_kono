@@ -73,7 +73,7 @@ export default function ChatInference(props: ChatInterfaceProperties) {
       className="relative flex-1 overflow-hidden antialiased bg-gray-50 full-size overflow-none"
       style={{ height: isMobile ? `${viewportHeight}px` : "100svh" }}
     >
-      <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 px-4 bg-gray-50">
+      <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 bg-gray-50">
         <div className="flex items-center justify-between w-full px-2">
           {/* Sidebar Menu */}
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
@@ -99,9 +99,17 @@ export default function ChatInference(props: ChatInterfaceProperties) {
         </div>
       </header>
 
-      <Chat />
+      <div className="flex flex-col flex-1 h-full overflow-x-hidden overflow-y-auto bg-gray-50">
+        {/* Shadow */}
+        {/* <div className="absolute inset-x-0 top-0 z-50 h-4 mt-12 pointer-events-none bg-gradient-to-b from-blue-400/20 to-transparent"></div> */}
 
-      <ChatInput />
+        {/* TODO: fix bottom margin to match input height */}
+        <Chat className="mb-48" />
+
+        <div className="fixed bottom-0 left-0 right-0 pb-4 bg-gray-50">
+          <ChatInput />
+        </div>
+      </div>
     </div>
   );
 }
