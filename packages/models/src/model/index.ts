@@ -13,7 +13,7 @@ export type ModelId = Static<typeof modelIdSchema>;
 export const modelProviderSchema = Type.Union([Type.Literal("ollama"), Type.Literal("google-generative-ai")]);
 export type ModelProvider = Static<typeof modelProviderSchema>;
 
-export const MODELS: Record<ModelId, Omit<Model, "id">> = {
+export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
   "qwen3:1.7b": {
     provider: "ollama",
     name: "Qwen 3 17B",
@@ -79,7 +79,7 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = {
     },
     status: ModelStatus.Active,
   },
-};
+});
 
 // TODO: In the future, this pricing should have a cost multiplier
 // TODO: Need to ensure recorded pricings are actually accurate and up-to-date. Could do end-to-end validation between code calculation and actual API call

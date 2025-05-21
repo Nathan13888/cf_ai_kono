@@ -12,9 +12,14 @@ function modelIdToLM(modelId: ModelId): LanguageModel {
   switch (modelId) {
     case "qwen3:1.7b":
       return ollama("qwen3:1.7b"); // TODO: Make the API key to a URL by env variable to support remote servers
+    case "gemini-2.0-flash":
+      return google("gemini-2.0-flash");
     case "gemini-2.5-flash-preview-05-20":
       return google("gemini-2.5-flash-preview-05-20");
+    case "gemini-2.5-pro-preview-05-06":
+      return google("gemini-2.5-pro-preview-05-06");
     default:
+      let _exhaustiveCheck: never;
       throw new Error("Unknown model ID");
   }
 }

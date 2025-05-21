@@ -7,6 +7,7 @@ import auth from "@/routes/auth";
 import chat from "@/routes/chat";
 import { getOpenapi } from "@/routes/openapi";
 import { Scalar } from "@scalar/hono-api-reference";
+import models from "./routes/models";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
   .use(createLogger())
@@ -34,7 +35,10 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 
     return c.text("Hello Hono!");
   }); // TODO: Remove
-const routes = app.route("/auth", auth).route("/chat", chat);
+const routes = app
+  .route("/auth", auth)
+  .route("/chat", chat)
+  .route("/models", models);
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {
