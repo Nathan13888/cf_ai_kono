@@ -5,7 +5,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -247,7 +246,9 @@ export default function ChatInput() {
     }
   }, [inputValue]);
 
-  const handleInputContainerClick = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleInputContainerClick = (
+    e: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     // Only focus if clicking directly on the container, not on buttons or other interactive elements
     if (
       e.target === e.currentTarget ||
@@ -381,7 +382,8 @@ export default function ChatInput() {
   };
 
   // Model Selection
-  const selectedModelDetails: Omit<Model, "id"> | undefined = AVAILABLE_MODELS[currentModel];
+  const selectedModelDetails: Omit<Model, "id"> | undefined =
+    AVAILABLE_MODELS[currentModel];
 
   return (
     <>
@@ -542,72 +544,65 @@ export default function ChatInput() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {
-                        Object.entries(AVAILABLE_MODELS).map(
-                          ([id, model]) => {
-                            // const model = { id: id, ...modelValues };
-                            return (
-                              <>
-                                {/* <SelectLabel key={id} className="font-medium text-gray-900">
+                      {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
+                        // const model = { id: id, ...modelValues };
+                        return (
+                          <>
+                            {/* <SelectLabel key={id} className="font-medium text-gray-900">
                                   {formatCreatorName(model.creator)}
                                 </SelectLabel> */}
-                                <SelectItem key={id} value={id}>
-                                  <div className="flex flex-row gap-2">
-                                    <div className="">
-                                      <div className="flex items-center gap-1">
-                                        <div className="pl-0.5">
-                                          {renderCreatorIcon(model.creator, 24)}
-                                        </div>
-                                        <span className="font-medium">
-                                          {model.name}
-                                        </span>
-                                        {model.status ===
-                                          ModelStatus.Active && (
-                                          <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
-                                            Active
-                                          </span>
-                                        )}
-                                        {model.status === ModelStatus.Alpha && (
-                                          <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
-                                            Alpha
-                                          </span>
-                                        )}
-                                        {model.status === ModelStatus.Beta && (
-                                          <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                                            Beta
-                                          </span>
-                                        )}
-                                        {model.status ===
-                                          ModelStatus.Deprecated && (
-                                          <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
-                                            Deprecated
-                                          </span>
-                                        )}
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {model.description}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {model.capabilities.map(
-                                          (capability) => (
-                                            <Badge
-                                              key={capability}
-                                              variant="outline"
-                                              className="mr-1"
-                                            >
-                                              {capability}
-                                            </Badge>
-                                          )
-                                        )}
-                                      </p>
+                            <SelectItem key={id} value={id}>
+                              <div className="flex flex-row gap-2">
+                                <div className="">
+                                  <div className="flex items-center gap-1">
+                                    <div className="pl-0.5">
+                                      {renderCreatorIcon(model.creator, 24)}
                                     </div>
+                                    <span className="font-medium">
+                                      {model.name}
+                                    </span>
+                                    {model.status === ModelStatus.Active && (
+                                      <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
+                                        Active
+                                      </span>
+                                    )}
+                                    {model.status === ModelStatus.Alpha && (
+                                      <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
+                                        Alpha
+                                      </span>
+                                    )}
+                                    {model.status === ModelStatus.Beta && (
+                                      <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
+                                        Beta
+                                      </span>
+                                    )}
+                                    {model.status ===
+                                      ModelStatus.Deprecated && (
+                                      <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
+                                        Deprecated
+                                      </span>
+                                    )}
                                   </div>
-                                </SelectItem>
-                              </>
-                            )
-                          }
-                        )
-                      }
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {model.description}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {model.capabilities.map((capability) => (
+                                      <Badge
+                                        key={capability}
+                                        variant="outline"
+                                        className="mr-1"
+                                      >
+                                        {capability}
+                                      </Badge>
+                                    ))}
+                                  </p>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          </>
+                        );
+                      })}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
