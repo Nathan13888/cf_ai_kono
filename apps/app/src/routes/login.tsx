@@ -1,49 +1,44 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { Button } from "@/components/ui/button"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { authClient } from '@/lib/auth-client'
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute('/login')({
-    loader: async () => {
-        const session = await authClient.getSession();
-        if (session) {
-            redirect({
-                to: "/chat",
-                throw: true,
-            });
-        }
-    },
-    component: RouteComponent,
-})
+export const Route = createFileRoute("/login")({
+  loader: async () => {
+    const session = await authClient.getSession();
+    if (session) {
+      redirect({
+        to: "/chat",
+        throw: true,
+      });
+    }
+  },
+  component: RouteComponent,
+});
 
 // TODO: Style
 function RouteComponent() {
-    return (
-        <div className="flex h-full w-full justify-center items-center">
-            <Card className="w-[350px]">
-                {/* <CardHeader>
+  return (
+    <div className="flex items-center justify-center w-full h-full">
+      <Card className="w-[350px]">
+        {/* <CardHeader>
                     <CardTitle>Sign in with Google</CardTitle>
                     <CardDescription>desc...</CardDescription>
                 </CardHeader> */}
-                <CardContent>
-                    <Button onClick={async () => {
-                        console.log("Clicked sign in");
-                        await authClient.signIn.social({
-                            provider: "google", // or any other provider id
-                        })
-                    }}>
-                        Sign in to Google
-                    </Button>
-                    {/* <form>
-          <div className="grid w-full items-center gap-4">
+        <CardContent>
+          <Button
+            onClick={async () => {
+              console.log("Clicked sign in");
+              await authClient.signIn.social({
+                provider: "google", // or any other provider id
+              });
+            }}
+          >
+            Sign in to Google
+          </Button>
+          {/* <form>
+          <div className="grid items-center w-full gap-4">
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="name">Name</Label>
               <Input id="name" placeholder="Name of your project" />
@@ -64,16 +59,15 @@ function RouteComponent() {
             </div>
           </div>
         </form> */}
-                </CardContent>
-                {/* <CardFooter className="flex justify-between">
+        </CardContent>
+        {/* <CardFooter className="flex justify-between">
         <Button variant="outline">Cancel</Button>
         <Button>Deploy</Button>
       </CardFooter> */}
-            </Card>
-        </div>
-    )
+      </Card>
+    </div>
+  );
 }
-
 
 // const { data, error } = await authClient.signIn.email({
 //         /**
@@ -89,7 +83,7 @@ function RouteComponent() {
 //          */
 //         callbackURL: "/dashboard",
 //         /**
-//          * remember the user session after the browser is closed. 
+//          * remember the user session after the browser is closed.
 //          * @default true
 //          */
 //         rememberMe: false

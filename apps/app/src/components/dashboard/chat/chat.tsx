@@ -30,11 +30,6 @@ export default function Chat({ className }: { className?: string }) {
   //   }),
   // });
 
-  // Determine if a section should have fixed height (only for sections after the first)
-  const shouldApplyHeight = (sectionIndex: number) => {
-    return sectionIndex > 0;
-  };
-
   // Scroll to maximum position when new section is created, but only for sections after the first
   useEffect(() => {
     if (currentSections && currentSections?.length > 1) {
@@ -127,19 +122,18 @@ export default function Chat({ className }: { className?: string }) {
             </div>
           ))}
 
-          {streamBuffer &&
-            (streamBuffer.error?.length || 0) > 0 && (
-              <div className="flex flex-col w-2/3 p-4 border items-left rounded-xl h-fit bg-slate-100 border-slate-200">
-                <span className="font-bold text-slate-900">
-                  An error has occurred :(
-                </span>
-                <span className="text-red-500 ">
-                  <code className="font-mono">{streamBuffer.error}</code>
-                </span>
-                {/* TODO: fix time */}
-                {/* <span>{timeAgoString(streamBuffer.lastUpdatedAt)}</span> */}
-              </div>
-            )}
+          {streamBuffer && (streamBuffer.error?.length || 0) > 0 && (
+            <div className="flex flex-col w-2/3 p-4 border items-left rounded-xl h-fit bg-slate-100 border-slate-200">
+              <span className="font-bold text-slate-900">
+                An error has occurred :(
+              </span>
+              <span className="text-red-500 ">
+                <code className="font-mono">{streamBuffer.error}</code>
+              </span>
+              {/* TODO: fix time */}
+              {/* <span>{timeAgoString(streamBuffer.lastUpdatedAt)}</span> */}
+            </div>
+          )}
 
           {
             // Loading indicator spinner
@@ -238,6 +232,7 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
   );
 };
 
+//
 const timeAgoString = (timestamp: number) => {
   const date = new Date(timestamp);
   const [timeAgo, setTimeAgo] = useState("");

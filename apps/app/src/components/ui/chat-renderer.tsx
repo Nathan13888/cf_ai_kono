@@ -1,18 +1,21 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import 'katex/dist/katex.min.css';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
+import "katex/dist/katex.min.css";
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 interface MessageRendererProps {
   content: string;
   className?: string;
 }
 
-const MessageRenderer: React.FC<MessageRendererProps> = ({ content, className }) => {
+const MessageRenderer: React.FC<MessageRendererProps> = ({
+  content,
+  className,
+}) => {
   return (
     <div className={cn("prose prose-sm max-w-none", className)}>
       <ReactMarkdown
@@ -38,7 +41,10 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({ content, className })
           a({ className, children, ...props }) {
             return (
               <a
-                className={cn("text-blue-600 hover:text-blue-800 underline", className)}
+                className={cn(
+                  "text-blue-600 hover:text-blue-800 underline",
+                  className
+                )}
                 {...props}
               >
                 {children}
