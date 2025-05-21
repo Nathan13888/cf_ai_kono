@@ -17,7 +17,13 @@ import type {
   Section,
 } from "@/lib/chat/types";
 import { client } from "@/lib/client";
-import { AVAILABLE_MODELS, type Model, type ModelId } from "@/lib/constants";
+import {
+  AVAILABLE_MODELS,
+  type Model,
+  type ModelCreator,
+  type ModelId,
+  ModelStatus,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
@@ -29,7 +35,6 @@ import {
   siMeta,
   siOpenai,
 } from "simple-icons";
-import { ModelStatus } from "../../../../../../packages/models/src/model";
 
 export default function ChatInput() {
   const id = useChatsStore((state) => state.currentConversation?.id);
@@ -529,7 +534,10 @@ export default function ChatInput() {
                       {selectedModelDetails && (
                         <div className="flex gap-2">
                           <span className="mt-0.5">
-                            {renderCreatorIcon(selectedModelDetails.creator)}
+                            {renderCreatorIcon(
+                              selectedModelDetails.creator,
+                              24
+                            )}
                           </span>
                           <span>{selectedModelDetails.name}</span>
                         </div>
@@ -543,17 +551,19 @@ export default function ChatInput() {
                           <>
                             {models.length > 0 && (
                               <SelectLabel className="font-medium text-gray-900">
-                                {creator}
+                                {formatCreatorName(creator as ModelCreator)}
                               </SelectLabel>
                             )}
 
                             {models.map(([id, model]) => {
                               return (
                                 <SelectItem key={id} value={id}>
-                                  <div className="flex items-start gap-2">
-                                    {/* <div className="mt-0.5">{model.icon}</div> */}
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
+                                  <div className="flex flex-row gap-2">
+                                    <div className="">
+                                      <div className="flex items-center gap-1">
+                                        <div className="pl-0.5">
+                                          {renderCreatorIcon(model.creator, 24)}
+                                        </div>
                                         <span className="font-medium">
                                           {model.name}
                                         </span>
@@ -636,35 +646,54 @@ export default function ChatInput() {
   );
 }
 
-const renderCreatorIcon = (creator: string) => {
+const renderCreatorIcon = (creator: string, size: number) => {
   switch (creator) {
     case "google":
-      return GetIconFromPath(siGooglegemini.hex, siGooglegemini.path);
+      return GetIconFromPath(siGooglegemini.hex, siGooglegemini.path, size);
     case "anthropic":
-      return GetIconFromPath(siAnthropic.hex, siAnthropic.path);
+      return GetIconFromPath(siAnthropic.hex, siAnthropic.path, size);
     case "openai":
-      return GetIconFromPath(siOpenai.hex, siOpenai.path);
+      return GetIconFromPath(siOpenai.hex, siOpenai.path, size);
     case "meta":
-      return GetIconFromPath(siMeta.hex, siMeta.path);
+      return GetIconFromPath(siMeta.hex, siMeta.path, size);
     case "deepseek":
       return null;
     case "alibaba":
-      return GetIconFromPath(siAlibabadotcom.hex, siAlibabadotcom.path);
+      return GetIconFromPath(siAlibabadotcom.hex, siAlibabadotcom.path, size);
     default:
       return null;
   }
 };
 
-const GetIconFromPath = (color: string, path: string) => {
+const GetIconFromPath = (color: string, path: string, size: number) => {
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox={`0 0 ${size} ${size}`}
       xmlns="http://www.w3.org/2000/svg"
       fill={"#" + color}
-      width="24"
-      height="24"
+      width={size}
+      height={size}
     >
       <path d={path} />
     </svg>
   );
+};
+
+const formatCreatorName = (creator: ModelCreator) => {
+  switch (creator) {
+    case "google":
+      return "Google";
+    case "anthropic":
+      return "Anthropic";
+    case "openai":
+      return "OpenAI";
+    case "meta":
+      return "Meta";
+    case "deepseek":
+      return "DeepSeek";
+    case "alibaba":
+      return "Alibaba";
+    default:
+      return creator;
+  }
 };

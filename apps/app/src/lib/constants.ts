@@ -8,6 +8,7 @@
 export {
   MODELS as AVAILABLE_MODELS,
   DEFAULT_MODEL,
+  ModelStatus,
   type Model,
   type ModelCreator,
   type ModelId,
