@@ -8,6 +8,8 @@ API server written with Hono (name is a coincidence).
 
   ```env
   GOOGLE_GENERATIVE_AI_API_KEY="YOUR_API_KEY"
+  OPENAI_API_KEY="sk-proj-YOUR_KEY"
+  ANTHROPIC_API_KEY="sk-ant-api08-YOUR_KEY"
   ```
 
 2. Run some commands:
@@ -37,7 +39,10 @@ bun deploy
 ## Obtaining API Keys
 
 - Google AI Studio (e.g. Gemini): <https://aistudio.google.com/apikey>
+- OpenAI: <https://platform.openai.com/settings/organization/api-keys>
+- Anthropic: <https://console.anthropic.com/settings/keys>
 
 ## Pricing
 
 - Google Generative AI: <https://ai.google.dev/gemini-api/docs/pricing>
+- OpenAI: <https://openai.com/api/pricing/>

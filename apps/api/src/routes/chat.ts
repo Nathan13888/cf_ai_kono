@@ -1,5 +1,7 @@
 import { google } from '@ai-sdk/google';
-import { type ModelId, modelIdSchema } from "@kono/models";
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { type Model, type ModelId, modelIdSchema, MODELS } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { type LanguageModel, streamText } from "ai";
 import { Hono } from "hono";
@@ -8,14 +10,30 @@ import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
 import { ollama } from "ollama-ai-provider";
 
-function modelIdToLM(modelId: ModelId): LanguageModel {
-  switch (modelId) {
-    case "qwen3:1.7b":
-      return ollama("qwen3:1.7b"); // TODO: Make the API key to a URL by env variable to support remote servers
-    case "gemini-2.5-flash-preview-05-20":
-      return google("gemini-2.5-flash-preview-05-20");
+/**
+ * Convert a model ID to a LanguageModel instance.
+ * @param modelId - The model ID to convert
+ * @returns [LanguageModel] if model ID is valid, otherwise undefined
+ */
+function modelIdToLM(modelId: ModelId): LanguageModel | undefined {
+  // Get model entry
+  const model: Omit<Model, "id"> | undefined = Object.entries(MODELS).find(([id]) => id === modelId)?.[1];
+  if (!model) {
+    return undefined;
+  }
+
+  switch (model.provider) {
+    case "ollama":
+      return ollama(modelId); // TODO: Make the API key to a URL by env variable to support remote servers
+    case "google-generative-ai":
+      return google(modelId);
+    case "openai":
+      return openai(modelId);
+    case "anthropic":
+      return anthropic(modelId);
     default:
-      throw new Error("Unknown model ID");
+      // TODO: How to do exhaustive check?
+      return undefined;
   }
 }
 
