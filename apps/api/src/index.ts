@@ -11,14 +11,17 @@ import models from "./routes/models";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
   .use(createLogger())
-  .use(
-    cors({
-      origin: "*", // TODO: Change in prod
-      allowMethods: ["GET", "POST", "PUT", "DELETE"],
-      allowHeaders: ["Authorization", "Content-Type"],
-      maxAge: 3600,
-    })
-  )
+  // .use(
+  //   cors({
+  //     origin: [
+  //       "http://localhost:1420",
+  //       "https://kono.chat",
+  //     ],
+  //     allowMethods: ["GET", "POST", "PUT", "DELETE"],
+  //     allowHeaders: ["Authorization", "Content-Type"],
+  //     maxAge: 3600,
+  //   })
+  // )
   .get("/", (c) => {
     const { logger } = c.var;
 

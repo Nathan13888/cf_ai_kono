@@ -7,6 +7,12 @@ API server written with Hono (name is a coincidence).
 1. Setup `.dev.vars`:
 
   ```env
+  GOOGLE_CLIENT_ID="YOUR_CLIENT_ID"
+  GOOGLE_CLIENT_SECRET="YOUR_CLIENT_SECRET"
+
+  BETTER_AUTH_SECRET=c451345af02efebb57114b408888ddffeadb72f5a1e10bffag597c944e51a3fa
+  BETTER_AUTH_URL="http://localhost:8787"
+
   GOOGLE_GENERATIVE_AI_API_KEY="YOUR_API_KEY"
   OPENAI_API_KEY="sk-proj-YOUR_KEY"
   ANTHROPIC_API_KEY="sk-ant-api08-YOUR_KEY"
@@ -23,8 +29,9 @@ API server written with Hono (name is a coincidence).
 
   # Generate schemas
   bunx @better-auth/cli generate # For Better Auth
-  bunx drizzle-kit generate # Generate the migration file
-  bunx drizzle-kit migrate # Apply the migration
+  bun run db:generate # Generate the migration file
+  # If necessary, delete .wrangler to reset local states/cache
+  bun run db:migrate # Push the migration
 
   # Start dev server
   bun dev
