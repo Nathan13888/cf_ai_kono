@@ -1,4 +1,6 @@
+import { ModelId } from "@kono/api";
 import { create } from "zustand";
+import { DEFAULT_MODEL_ID } from "../constants";
 import type {
   ActiveButton,
   Conversation,
@@ -15,6 +17,7 @@ interface ChatsState {
   setViewportHeight: (_: number) => void;
 
   // Local chat information
+  currentModel: ModelId;
   // currentChatId: ConversationID | null;
   currentConversation: Conversation | null;
   isStreaming: boolean;
@@ -24,6 +27,7 @@ interface ChatsState {
   // loadedMessages: Map<ConversationID, Conversation>;
 
   // Chat functions
+  setCurrentModel: (_: ModelId) => void;
   newChat: () => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
@@ -51,12 +55,16 @@ export const useChatsStore = create<ChatsState>((set) => ({
     set({ viewportHeight: vh });
   },
 
+  currentModel: DEFAULT_MODEL_ID,
   currentChatId: null as ConversationID | null,
   currentConversation: null as Conversation | null,
   isStreaming: false,
   streamBuffer: null as StreamBuffer | null,
   // loadedMessages: new Map<ConversationID, Conversation>(),
 
+  setCurrentModel: (modelId: ModelId) => {
+    set({ currentModel: modelId });
+  },
   newChat: () => {
     set((_) => {
       // TODO: register with server

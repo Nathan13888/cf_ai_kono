@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from 'hono/logger';
+import { logger } from "hono/logger";
 
 import { createLogger } from "@/logger";
 import auth from "@/routes/auth";
@@ -45,3 +45,5 @@ if (isDevelopment) {
 
 export default app;
 export type AppType = typeof routes;
+
+export { ModelId } from "@kono/models";
