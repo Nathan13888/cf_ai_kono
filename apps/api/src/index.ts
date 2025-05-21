@@ -45,5 +45,3 @@ if (isDevelopment) {
 
 export default app;
 export type AppType = typeof routes;
-
-export { ModelId } from "@kono/models";

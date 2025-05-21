@@ -1,6 +1,5 @@
-import { ModelId } from "@kono/api";
+import { DEFAULT_MODEL, ModelId } from "@/lib/constants";
 import { create } from "zustand";
-import { DEFAULT_MODEL_ID } from "../constants";
 import type {
   ActiveButton,
   Conversation,
@@ -55,7 +54,7 @@ export const useChatsStore = create<ChatsState>((set) => ({
     set({ viewportHeight: vh });
   },
 
-  currentModel: DEFAULT_MODEL_ID,
+  currentModel: DEFAULT_MODEL,
   currentChatId: null as ConversationID | null,
   currentConversation: null as Conversation | null,
   isStreaming: false,

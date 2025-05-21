@@ -16,9 +16,8 @@ import type {
   Section,
 } from "@/lib/chat/types";
 import { client } from "@/lib/client";
-import { AVAILABLE_MODELS } from "@/lib/constants";
+import { AVAILABLE_MODELS, ModelId } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { ModelId } from "@kono/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -521,14 +520,10 @@ export default function ChatInput() {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Models</SelectLabel>
-                      {Object.entries(AVAILABLE_MODELS).map(([name, model]) => {
+                      {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
                         return (
-                          <SelectItem
-                            key={model.id}
-                            value={model.id}
-                            // onClick={() => {}}
-                          >
-                            {name}
+                          <SelectItem key={id} value={id}>
+                            {model.name}
                           </SelectItem>
                         );
                       })}
