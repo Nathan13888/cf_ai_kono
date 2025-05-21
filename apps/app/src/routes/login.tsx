@@ -12,34 +12,20 @@ import {
 import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/login')({
+    loader: async () => {
+        const session = await authClient.getSession();
+        if (session) {
+            redirect({
+                to: "/chat",
+                throw: true,
+            });
+        }
+    },
     component: RouteComponent,
 })
 
 // TODO: Style
 function RouteComponent() {
-    const { 
-        data: session, 
-        isPending, //loading state
-        error, //error object
-        refetch //refetch the session
-    } = authClient.useSession() 
-
-    if (isPending) {
-        return <div>Loading...</div>
-    }
-    if (error) {
-        console.error("Error fetching session", error);
-        return <div>Error fetching session</div>
-    }
-
-    // TODO: Move this to loader vv
-    // if (currentUserId) {
-    //     redirect({
-    //         to: "/chat",
-    //         throw: true,
-    //     });
-    // }
-
     return (
         <div className="flex h-full w-full justify-center items-center">
             <Card className="w-[350px]">
@@ -48,28 +34,14 @@ function RouteComponent() {
                     <CardDescription>desc...</CardDescription>
                 </CardHeader> */}
                 <CardContent>
-                    {session ? (
-                        <div>
-                            <h1>Welcome {session.user?.name}</h1>
-                            <p>{session.user?.email}</p>
-                            <pre>{JSON.stringify(session, null, 2)}</pre>
-                            <Button onClick={async () => {
-                                console.log("Clicked sign out");
-                                await authClient.signOut();
-                            }}>
-                                Sign out
-                            </Button>
-                        </div>
-                    ) : (
-                        <Button onClick={async () => {
-                            console.log("Clicked sign in");
-                            await authClient.signIn.social({
-                                provider: "google", // or any other provider id
-                            })
-                        }}>
-                            Sign in to Google
-                        </Button>
-                    )}
+                    <Button onClick={async () => {
+                        console.log("Clicked sign in");
+                        await authClient.signIn.social({
+                            provider: "google", // or any other provider id
+                        })
+                    }}>
+                        Sign in to Google
+                    </Button>
                     {/* <form>
           <div className="grid w-full items-center gap-4">
             <div className="flex flex-col space-y-1.5">

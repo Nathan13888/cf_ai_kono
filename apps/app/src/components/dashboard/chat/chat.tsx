@@ -128,11 +128,10 @@ export default function Chat({ className }: { className?: string }) {
           ))}
 
           {streamBuffer &&
-            streamBuffer.error &&
-            streamBuffer.error.length > 0 && (
+            (streamBuffer.error?.length || 0) > 0 && (
               <div className="flex flex-col w-2/3 p-4 border items-left rounded-xl h-fit bg-slate-100 border-slate-200">
                 <span className="font-bold text-slate-900">
-                  An error has occured :(
+                  An error has occurred :(
                 </span>
                 <span className="text-red-500 ">
                   <code className="font-mono">{streamBuffer.error}</code>

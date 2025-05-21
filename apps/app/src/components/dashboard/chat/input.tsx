@@ -247,7 +247,7 @@ export default function ChatInput() {
     }
   }, [inputValue]);
 
-  const handleInputContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleInputContainerClick = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Only focus if clicking directly on the container, not on buttons or other interactive elements
     if (
       e.target === e.currentTarget ||
@@ -381,11 +381,7 @@ export default function ChatInput() {
   };
 
   // Model Selection
-  let selectedModelDetails: Omit<Model, "id"> | undefined;
-  Object.entries(AVAILABLE_MODELS).forEach(([_creator, models]) => {
-    const res = models.find(([id, _model]) => id === currentModel);
-    if (res) selectedModelDetails = res[1];
-  });
+  const selectedModelDetails: Omit<Model, "id"> | undefined = AVAILABLE_MODELS[currentModel];
 
   return (
     <>
@@ -396,7 +392,7 @@ export default function ChatInput() {
             "relative w-full rounded-3xl border border-gray-200 bg-white p-3 cursor-text",
             isStreaming && "opacity-80"
           )}
-          onClick={handleInputContainerClick}
+          onKeyUp={handleInputContainerClick}
         >
           {/* BLUR BORDER ABOVE INPUT */}
           {/* TODO: fix implementation */}
@@ -546,17 +542,15 @@ export default function ChatInput() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {Object.entries(AVAILABLE_MODELS).map(
-                        ([creator, models]) => (
-                          <>
-                            {models.length > 0 && (
-                              <SelectLabel className="font-medium text-gray-900">
-                                {formatCreatorName(creator as ModelCreator)}
-                              </SelectLabel>
-                            )}
-
-                            {models.map(([id, model]) => {
-                              return (
+                      {
+                        Object.entries(AVAILABLE_MODELS).map(
+                          ([id, model]) => {
+                            // const model = { id: id, ...modelValues };
+                            return (
+                              <>
+                                {/* <SelectLabel key={id} className="font-medium text-gray-900">
+                                  {formatCreatorName(model.creator)}
+                                </SelectLabel> */}
                                 <SelectItem key={id} value={id}>
                                   <div className="flex flex-row gap-2">
                                     <div className="">
@@ -609,11 +603,11 @@ export default function ChatInput() {
                                     </div>
                                   </div>
                                 </SelectItem>
-                              );
-                            })}
-                          </>
+                              </>
+                            )
+                          }
                         )
-                      )}
+                      }
                     </SelectGroup>
                   </SelectContent>
                 </Select>

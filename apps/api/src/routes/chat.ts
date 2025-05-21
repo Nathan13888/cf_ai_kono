@@ -98,6 +98,16 @@ const app = new Hono().post(
           },
         },
       },
+      400: {
+        description: "Bad Request",
+        content: {
+          "application/json": {
+            schema: Type.Object({
+              error: Type.String(),
+            }),
+          },
+        },
+      }
     },
   }),
   validator("query", chatQuerySchema),
@@ -108,6 +118,15 @@ const app = new Hono().post(
     console.log("query", query); // TODO
     console.log("body", body); // TODO
     const model = modelIdToLM(query.modelId);
+
+    if (!model) {
+      return c.json(
+        {
+          error: `Model ${query.modelId} not found`,
+        },
+        400
+      );
+    }
 
     const result = await streamText({
       model: model,
