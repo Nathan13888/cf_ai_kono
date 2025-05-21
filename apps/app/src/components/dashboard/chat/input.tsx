@@ -16,7 +16,7 @@ import type {
   Section,
 } from "@/lib/chat/types";
 import { client } from "@/lib/client";
-import { AVAILABLE_MODELS, ModelId } from "@/lib/constants";
+import { AVAILABLE_MODELS, type ModelId } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";

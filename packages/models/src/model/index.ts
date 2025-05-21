@@ -19,8 +19,8 @@ export type ModelProvider = Static<typeof modelProviderSchema>;
 export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
   "qwen3:1.7b": {
     provider: "ollama",
-    name: "Qwen 3 17B",
-    description: "Qwen 3 17B",
+    name: "Qwen 3 1.7B",
+    description: "Qwen 3 1.7B",
     capabilities: ["thinking"],
     pricing: {
       input: 0.0,
