@@ -2,8 +2,9 @@ import MessageRenderer from "@/components/ui/chat-renderer";
 import { useChatsStore } from "@/lib/chat/store";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import { Copy, Loader, RefreshCcw, Share2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Chat({ className }: { className?: string }) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +73,12 @@ export default function Chat({ className }: { className?: string }) {
     <div ref={chatContainerRef} className={cn("relative flex-1", className)}>
       {/* TODO: improve loading state */}
       {!currentSections && <span>Loading</span>}
-      {currentSections && (
+      {currentSections && currentSections.length === 0 && (
+        <div className="flex items-center justify-center h-full">
+          <span className="text-gray-500">No messages yet</span>
+        </div>
+      )}
+      {currentSections && currentSections.length > 0 && (
         <div className="h-full max-w-3xl mx-auto space-y-4 ">
           <div className="h-12" />
 
@@ -103,6 +109,7 @@ export default function Chat({ className }: { className?: string }) {
               {!section.isRendering && (
                 <div>
                   {section.messages.map((message) => {
+                    // TODO: clean up this mess
                     const StreamContent: React.FC = () =>
                       streamBuffer &&
                       streamBuffer.id === message.id &&
@@ -119,9 +126,25 @@ export default function Chat({ className }: { className?: string }) {
               )}
             </div>
           ))}
+
+          {streamBuffer &&
+            streamBuffer.error &&
+            streamBuffer.error.length > 0 && (
+              <div className="flex flex-col w-2/3 p-4 border items-left rounded-xl h-fit bg-slate-100 border-slate-200">
+                <span className="font-bold text-slate-900">
+                  An error has occured :(
+                </span>
+                <span className="text-red-500 ">
+                  <code className="font-mono">{streamBuffer.error}</code>
+                </span>
+                {/* TODO: fix time */}
+                {/* <span>{timeAgoString(streamBuffer.lastUpdatedAt)}</span> */}
+              </div>
+            )}
+
           {
             // Loading indicator spinner
-            isStreaming && <Loader className="animate-spin" />
+            isStreaming && <Loader className="h-8 animate-spin" />
           }
           <div ref={messagesEndRef} />
 
@@ -146,9 +169,9 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
     >
       <div
         className={cn(
-          "max-w-[80%] px-4 py-2 rounded-2xl",
+          "max-w-[80%] py-2 rounded-2xl",
           message.type === "user"
-            ? "bg-white border border-gray-200 rounded-br-none" // USER
+            ? "bg-white border border-gray-200 rounded-br-none px-4" // USER
             : "text-gray-900" // AGENT
         )}
       >
@@ -214,4 +237,23 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
       {/* TODO: support system sate */}
     </div>
   );
+};
+
+const timeAgoString = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const [timeAgo, setTimeAgo] = useState("");
+
+  useEffect(() => {
+    const updateTimeAgo = () => {
+      setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
+    };
+
+    // Initial update
+    updateTimeAgo();
+
+    const intervalId = setInterval(updateTimeAgo, 1000); // Update every 1 second
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return <span>{timeAgo}</span>;
 };

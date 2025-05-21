@@ -104,9 +104,9 @@ export default function ChatInference(props: ChatInterfaceProperties) {
         {/* <div className="absolute inset-x-0 top-0 z-50 h-4 mt-12 pointer-events-none bg-gradient-to-b from-blue-400/20 to-transparent"></div> */}
 
         {/* TODO: fix bottom margin to match input height */}
-        <Chat className="mb-48" />
+        <Chat className="px-4 mb-48" />
 
-        <div className="fixed bottom-0 left-0 right-0 pb-4 bg-gray-50">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 bg-gray-50">
           <ChatInput />
         </div>
       </div>

@@ -8,5 +8,7 @@
 export {
   MODELS as AVAILABLE_MODELS,
   DEFAULT_MODEL,
+  type Model,
+  type ModelCreator,
   type ModelId,
 } from "@kono/models";

@@ -5,6 +5,7 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -16,7 +17,7 @@ import type {
   Section,
 } from "@/lib/chat/types";
 import { client } from "@/lib/client";
-import { AVAILABLE_MODELS, type ModelId } from "@/lib/constants";
+import { AVAILABLE_MODELS, type Model, type ModelId } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
@@ -93,13 +94,6 @@ export default function ChatInput() {
       } as Section;
       addSection(id, userMessageObj);
 
-      // TODO: fix animations (eg. vibration)
-      // Add a delay before the second vibration
-      // setTimeout(() => {
-      //   // Add vibration when streaming begins
-      //   navigator.vibrate(50);
-      // }, 200); // 200ms delay to make it distinct from the first vibration
-
       // Prepare stream from server
       const responseSectionId = crypto.randomUUID(); // response from agent
       const messageId = crypto.randomUUID(); //
@@ -122,9 +116,6 @@ export default function ChatInput() {
 
       setStreaming({
         messageId,
-        words: [],
-        lastUpdatedAt: new Date().getTime(),
-        error: null,
       });
 
       // Hit chat endpoint
@@ -172,6 +163,7 @@ export default function ChatInput() {
       if (!reader) {
         throw new Error(`Failed to get reader from response: ${response}`);
       }
+
       let streamingMessage = "";
       while (true) {
         const { done, value } = await reader.read();
@@ -194,13 +186,6 @@ export default function ChatInput() {
           ],
           isRendering: false,
         });
-
-        // setStreaming({
-        //   messageId,
-        //   words: mockWords.slice(0, i + 1),
-        //   lastUpdatedAt: new Date().getTime(),
-        //   error: null,
-        // });
       }
 
       // TODO: Detect if response was non-200, it should display as an error.
@@ -220,21 +205,21 @@ export default function ChatInput() {
         // TODO: check this property
         isRendering: false,
       });
-      setStreaming(null);
-
-      // Stream the text
-      // TODO: impl
-      // Add vibration when streaming ends
-      // navigator.vibrate(50);
     },
     onSuccess: () => {
       console.warn("TODO: onSuccess");
+      setStreaming(null);
+
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ["conversation", id] });
     },
     onError: (error) => {
       console.error("Error sending prompt:", error);
-      setStreaming(null);
+
+      // add system message
+      setStreaming({
+        error: error.message,
+      });
 
       // TODO: display error
     },
@@ -390,9 +375,12 @@ export default function ChatInput() {
     }
   };
 
-  let selectedModelDetails = Object.entries(AVAILABLE_MODELS).find(
-    ([id, _model]) => id === currentModel
-  );
+  // Model Selection
+  let selectedModelDetails: Omit<Model, "id"> | undefined;
+  Object.entries(AVAILABLE_MODELS).forEach(([_creator, models]) => {
+    const res = models.find(([id, _model]) => id === currentModel);
+    if (res) selectedModelDetails = res[1];
+  });
 
   return (
     <>
@@ -405,6 +393,15 @@ export default function ChatInput() {
           )}
           onClick={handleInputContainerClick}
         >
+          {/* BLUR BORDER ABOVE INPUT */}
+          {/* TODO: fix implementation */}
+          {/* <div
+            className={cn(
+              "absolute inset-0 rounded-3xl border border-gray-200 pointer-events-none ",
+              "opacity-80 h-[20px] mb-[20px]"
+            )}
+          ></div> */}
+
           {/* CHAT INPUT */}
           <div className="mb-8">
             <textarea
@@ -532,66 +529,81 @@ export default function ChatInput() {
                       {selectedModelDetails && (
                         <div className="flex gap-2">
                           <span className="mt-0.5">
-                            {renderCreatorIcon(selectedModelDetails[1].creator)}
+                            {renderCreatorIcon(selectedModelDetails.creator)}
                           </span>
-                          <span>{selectedModelDetails[1].name}</span>
+                          <span>{selectedModelDetails.name}</span>
                         </div>
                       )}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {/* <SelectLabel>Models</SelectLabel> */}
-                      {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
-                        return (
-                          <SelectItem key={id} value={id}>
-                            <div className="flex items-start gap-2">
-                              {/* <div className="mt-0.5">{model.icon}</div> */}
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    {model.name}
-                                  </span>
-                                  {model.status === ModelStatus.Active && (
-                                    <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
-                                      Active
-                                    </span>
-                                  )}
-                                  {model.status === ModelStatus.Alpha && (
-                                    <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
-                                      Alpha
-                                    </span>
-                                  )}
-                                  {model.status === ModelStatus.Beta && (
-                                    <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                                      Beta
-                                    </span>
-                                  )}
-                                  {model.status === ModelStatus.Deprecated && (
-                                    <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
-                                      Deprecated
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {model.description}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {model.capabilities.map((capability) => (
-                                    <Badge
-                                      key={capability}
-                                      variant="outline"
-                                      className="mr-1"
-                                    >
-                                      {capability}
-                                    </Badge>
-                                  ))}
-                                </p>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
+                      {Object.entries(AVAILABLE_MODELS).map(
+                        ([creator, models]) => (
+                          <>
+                            {models.length > 0 && (
+                              <SelectLabel className="font-medium text-gray-900">
+                                {creator}
+                              </SelectLabel>
+                            )}
+
+                            {models.map(([id, model]) => {
+                              return (
+                                <SelectItem key={id} value={id}>
+                                  <div className="flex items-start gap-2">
+                                    {/* <div className="mt-0.5">{model.icon}</div> */}
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">
+                                          {model.name}
+                                        </span>
+                                        {model.status ===
+                                          ModelStatus.Active && (
+                                          <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
+                                            Active
+                                          </span>
+                                        )}
+                                        {model.status === ModelStatus.Alpha && (
+                                          <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
+                                            Alpha
+                                          </span>
+                                        )}
+                                        {model.status === ModelStatus.Beta && (
+                                          <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
+                                            Beta
+                                          </span>
+                                        )}
+                                        {model.status ===
+                                          ModelStatus.Deprecated && (
+                                          <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
+                                            Deprecated
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {model.description}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {model.capabilities.map(
+                                          (capability) => (
+                                            <Badge
+                                              key={capability}
+                                              variant="outline"
+                                              className="mr-1"
+                                            >
+                                              {capability}
+                                            </Badge>
+                                          )
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </>
+                        )
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
