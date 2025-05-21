@@ -70,14 +70,14 @@ export default function ChatInference(props: ChatInterfaceProperties) {
   return (
     <div
       ref={mainContainerRef}
-      className="bg-gray-50 flex flex-col overflow-hidden"
+      className="relative flex-1 overflow-hidden antialiased bg-gray-50 full-size overflow-none"
       style={{ height: isMobile ? `${viewportHeight}px` : "100svh" }}
     >
-      <header className="fixed top-0 left-0 right-0 h-12 flex items-center px-4 z-20 bg-gray-50">
-        <div className="w-full flex items-center justify-between px-2">
+      <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 px-4 bg-gray-50">
+        <div className="flex items-center justify-between w-full px-2">
           {/* Sidebar Menu */}
-          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-            <Menu className="h-5 w-5 text-gray-700" />
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+            <Menu className="w-5 h-5 text-gray-700" />
             <span className="sr-only">Menu</span>
           </Button>
 
@@ -90,10 +90,10 @@ export default function ChatInference(props: ChatInterfaceProperties) {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full h-8 w-8"
+            className="w-8 h-8 rounded-full"
             onClick={(_) => newChat()}
           >
-            <PenSquare className="h-5 w-5 text-gray-700" />
+            <PenSquare className="w-5 h-5 text-gray-700" />
             <span className="sr-only">New Chat</span>
           </Button>
         </div>

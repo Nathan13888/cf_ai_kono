@@ -1,6 +1,6 @@
 import { type Static, Type } from "@sinclair/typebox";
-import { ModelStatus, modelStatusSchema } from "./status";
 import { pricingSchema } from "./pricing";
+import { ModelStatus, modelStatusSchema } from "./status";
 
 export const modelIdSchema = Type.Union([
   Type.Literal("qwen3:1.7b"),
@@ -10,7 +10,10 @@ export const modelIdSchema = Type.Union([
 ]);
 export type ModelId = Static<typeof modelIdSchema>;
 
-export const modelProviderSchema = Type.Union([Type.Literal("ollama"), Type.Literal("google-generative-ai")]);
+export const modelProviderSchema = Type.Union([
+  Type.Literal("ollama"),
+  Type.Literal("google-generative-ai"),
+]);
 export type ModelProvider = Static<typeof modelProviderSchema>;
 
 export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
@@ -32,12 +35,12 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
     capabilities: ["multimodal"],
     pricing: {
       input: {
-        text: 0.10,
-        image: 0.10,
-        audio: 0.70,
-        video: 0.40,
+        text: 0.1,
+        image: 0.1,
+        audio: 0.7,
+        video: 0.4,
       },
-      output: 0.40,
+      output: 0.4,
     },
     status: ModelStatus.Active,
   },
@@ -50,12 +53,12 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
       input: {
         text: 0.15,
         image: 0.15,
-        audio: 1.00,
+        audio: 1.0,
         video: 0.15,
       },
       output: {
-        nonThinking: 0.60,
-        thinking: 3.50,
+        nonThinking: 0.6,
+        thinking: 3.5,
       },
     },
     status: ModelStatus.Active,
@@ -69,12 +72,12 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
       input: {
         cutoff: 200_000,
         lower: 1.25,
-        upper: 2.50,
+        upper: 2.5,
       },
       output: {
         cutoff: 200_000,
-        lower: 10.00,
-        upper: 15.00,
+        lower: 10.0,
+        upper: 15.0,
       },
     },
     status: ModelStatus.Active,
@@ -97,7 +100,7 @@ export const capabilitySchema = Type.Union([
   Type.Literal("search"),
   Type.Literal("instruction_following"),
   Type.Literal("coding"),
-])
+]);
 
 export const capabilitiesSchema = Type.Array(capabilitySchema, { default: [] });
 export type Capabilities = Static<typeof capabilitiesSchema>;
@@ -114,6 +117,7 @@ export const modelSchema = Type.Object({
   status: modelStatusSchema,
 });
 export type Model = Static<typeof modelSchema>;
+export const DEFAULT_MODEL = "gemini-2.5-flash-preview-05-20" as ModelId;
 
 export * from "./pricing";
 export * from "./status";

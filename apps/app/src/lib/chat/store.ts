@@ -1,3 +1,4 @@
+import { DEFAULT_MODEL, ModelId } from "@/lib/constants";
 import { create } from "zustand";
 import type {
   ActiveButton,
@@ -15,6 +16,7 @@ interface ChatsState {
   setViewportHeight: (_: number) => void;
 
   // Local chat information
+  currentModel: ModelId;
   // currentChatId: ConversationID | null;
   currentConversation: Conversation | null;
   isStreaming: boolean;
@@ -24,6 +26,7 @@ interface ChatsState {
   // loadedMessages: Map<ConversationID, Conversation>;
 
   // Chat functions
+  setCurrentModel: (_: ModelId) => void;
   newChat: () => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
@@ -51,12 +54,16 @@ export const useChatsStore = create<ChatsState>((set) => ({
     set({ viewportHeight: vh });
   },
 
+  currentModel: DEFAULT_MODEL,
   currentChatId: null as ConversationID | null,
   currentConversation: null as Conversation | null,
   isStreaming: false,
   streamBuffer: null as StreamBuffer | null,
   // loadedMessages: new Map<ConversationID, Conversation>(),
 
+  setCurrentModel: (modelId: ModelId) => {
+    set({ currentModel: modelId });
+  },
   newChat: () => {
     set((_) => {
       // TODO: register with server

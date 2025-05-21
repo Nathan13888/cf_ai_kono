@@ -1,5 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useChatsStore } from "@/lib/chat/store";
 import type {
   ActiveButton,
@@ -8,6 +16,7 @@ import type {
   Section,
 } from "@/lib/chat/types";
 import { client } from "@/lib/client";
+import { AVAILABLE_MODELS, ModelId } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
@@ -25,6 +34,8 @@ export default function ChatInput() {
   const activeButton = useChatsStore((state) => state.activeButton);
   const setActiveButton = useChatsStore((state) => state.setActiveButton);
 
+  const currentModel = useChatsStore((state) => state.currentModel);
+  const setCurrentModel = useChatsStore((state) => state.setCurrentModel);
   const isStreaming = useChatsStore((state) => state.isStreaming);
   const streamBuffer = useChatsStore((state) => state.streamBuffer);
   const setStreaming = useChatsStore((state) => state.setStreaming);
@@ -141,8 +152,7 @@ export default function ChatInput() {
       console.log("Sending messages:", messages);
       const response = await client.chat.$post({
         query: {
-          // modelId: "gemini-2.5-flash-preview-05-20",
-          modelId: "qwen3:1.7b",
+          modelId: currentModel,
         },
         json: {
           messages: messages,
@@ -216,7 +226,9 @@ export default function ChatInput() {
     },
     onError: (error) => {
       console.error("Error sending prompt:", error);
-      // TODO: set error is last section
+      setStreaming(null);
+
+      // TODO: display error
     },
   });
 
@@ -382,11 +394,18 @@ export default function ChatInput() {
           onClick={handleInputContainerClick}
         >
           {/* CHAT INPUT */}
-          <div className="pb-9">
-            <Textarea
+          <div className="mb-8">
+            <textarea
               ref={textareaRef}
               placeholder="Ask Anything"
-              className="min-h-[24px] max-h-[160px] w-full rounded-3xl border-0 bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base focus-visible:ring-0 focus-visible:ring-offset-0 text-base pl-2 pr-4 pt-0 pb-0 resize-none overflow-y-auto leading-tight"
+              className={cn(
+                "min-h-[24px] max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
+                "outline-none focus:outline-none focus-visible:outline-none",
+                "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
+                "focus:border-0 focus-visible:border-0",
+                "resize-none overflow-y-auto leading-tight",
+                "bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:font-normal text-base"
+              )}
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -408,7 +427,7 @@ export default function ChatInput() {
           <div className="absolute bottom-3 left-3 right-3">
             <div className="flex items-center justify-between">
               {/* LEFT ISLAND */}
-              <div className="flex items-center select-none space-x-2 ">
+              <div className="flex items-center space-x-2 select-none ">
                 <Button
                   type="button"
                   variant="outline"
@@ -484,8 +503,35 @@ export default function ChatInput() {
               </div>
 
               {/* RIGHT ISLAND */}
-              <div className="flex items-center select-none space-x-2">
-                {/* TODO(high): model section */}
+              <div className="flex items-center space-x-2 select-none">
+                {/* Model Selection */}
+                <Select
+                  value={currentModel as string}
+                  onValueChange={(value) => {
+                    setCurrentModel(value as ModelId);
+                    // TODO: handle support for different models
+                    setActiveButton("none");
+                    focusTextarea();
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Models</SelectLabel>
+                      {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
+                        return (
+                          <SelectItem key={id} value={id}>
+                            {model.name}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   variant="outline"
