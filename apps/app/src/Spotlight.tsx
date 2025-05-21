@@ -1,4 +1,4 @@
-import "./App.css";
+import "./root.css";
 
 export default function Spotlight() {
   return (
