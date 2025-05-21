@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ModelStatus } from "../../../../../../packages/models/src/model";
 
 export default function ChatInput() {
   const id = useChatsStore((state) => state.currentConversation?.id);
@@ -521,9 +522,17 @@ export default function ChatInput() {
                     <SelectGroup>
                       <SelectLabel>Models</SelectLabel>
                       {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
+                        let labelSuffix = "";
+                        if (model.status === ModelStatus.Beta) {
+                          labelSuffix = " (Beta)";
+                        } else if (model.status === ModelStatus.Alpha) {
+                          labelSuffix = " (Alpha)";
+                        } else if (model.status === ModelStatus.Deprecated) {
+                          labelSuffix = " (Deprecated)";
+                        }
                         return (
                           <SelectItem key={id} value={id}>
-                            {model.name}
+                            {model.name}{labelSuffix}
                           </SelectItem>
                         );
                       })}

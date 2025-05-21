@@ -13,12 +13,26 @@ export type ModelId = Static<typeof modelIdSchema>;
 export const modelProviderSchema = Type.Union([
   Type.Literal("ollama"),
   Type.Literal("google-generative-ai"),
+  Type.Literal("openai"),
+  Type.Literal("anthropic"),
 ]);
 export type ModelProvider = Static<typeof modelProviderSchema>;
 
-export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
+export const modelCreatorSchema = Type.Union([
+  Type.Literal("google"),
+  Type.Literal("anthropic"),
+  Type.Literal("openai"),
+  Type.Literal("meta"),
+  Type.Literal("deepseek"),
+  Type.Literal("alibaba"),
+]);
+export type ModelCreator = Static<typeof modelCreatorSchema>;
+
+// TODO: Add links
+export const MODELS: Readonly<Record<ModelId, Omit<Model, "id">>> = Object.freeze({
   "qwen3:1.7b": {
     provider: "ollama",
+    creator: "alibaba",
     name: "Qwen 3 1.7B",
     description: "Qwen 3 1.7B",
     capabilities: ["thinking"],
@@ -26,10 +40,11 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
       input: 0.0,
       output: 0.0,
     },
-    status: ModelStatus.Active,
+    status: ModelStatus.Beta,
   },
   "gemini-2.0-flash": {
     provider: "google-generative-ai",
+    creator: "google",
     name: "Gemini 2.0 Flash",
     description: "Google's fast model",
     capabilities: ["multimodal"],
@@ -42,10 +57,11 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
       },
       output: 0.4,
     },
-    status: ModelStatus.Active,
+    status: ModelStatus.Beta,
   },
   "gemini-2.5-flash-preview-05-20": {
     provider: "google-generative-ai",
+    creator: "google",
     name: "Gemini 2.5 Flash",
     description: "Google's fast reasoning model",
     capabilities: ["thinking", "multimodal"],
@@ -61,10 +77,11 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
         thinking: 3.5,
       },
     },
-    status: ModelStatus.Active,
+    status: ModelStatus.Beta,
   },
   "gemini-2.5-pro-preview-05-06": {
     provider: "google-generative-ai",
+    creator: "google",
     name: "Gemini 2.5 Pro",
     description: "Google's advanced reasoning model",
     capabilities: ["thinking", "multimodal"],
@@ -80,7 +97,95 @@ export const MODELS: Record<ModelId, Omit<Model, "id">> = Object.freeze({
         upper: 15.0,
       },
     },
-    status: ModelStatus.Active,
+    status: ModelStatus.Beta,
+  },
+  "claude-3-7-sonnet-20250219": {
+    provider: "anthropic",
+    creator: "anthropic",
+    name: "Claude 3.7 Sonnet",
+    description: "Cladue's flagship model for complex tasks",
+    capabilities: ["multimodal"],
+    pricing: {
+      input: 2.50,
+      output: 10.00,
+    },
+    status: ModelStatus.Deprecated,
+  }, // TODO: How to do thinking?
+  "gpt-4o": {
+    provider: "openai",
+    creator: "openai",
+    name: "GPT-4o",
+    description: "OpenAI's fast, intelligent, flexible GPT model",
+    capabilities: ["multimodal"],
+    pricing: {
+      input: 2.50,
+      output: 10.00,
+    },
+    status: ModelStatus.Deprecated,
+  },
+  "gpt-4.1": {
+    provider: "openai",
+    creator: "openai",
+    name: "GPT-4.1",
+    description: "OpenAI's flagship GPT model for complex tasks",
+    capabilities: ["multimodal"],
+    pricing: {
+      input: 2.00,
+      output: 8.00,
+    },
+    link: "https://platform.openai.com/docs/models/gpt-4.1",
+    status: ModelStatus.Beta,
+  },
+  "gpt-4.1-mini": {
+    provider: "openai",
+    creator: "openai",
+    name: "GPT-4.1 mini",
+    description: "OpenAI's GPT-4.1 but balanced for intelligence, speed, and cost",
+    capabilities: ["multimodal"],
+    pricing: {
+      input: 0.40,
+      output: 1.60,
+    },
+    link: "https://platform.openai.com/docs/models/gpt-4.1-mini",
+    status: ModelStatus.Beta,
+  },
+  "gpt-4.1-nano": {
+    provider: "openai",
+    creator: "openai",
+    name: "GPT-4.1 nano",
+    description: "OpenAI's fastest, most cost-effective GPT-4.1 model",
+    capabilities: ["multimodal"],
+    pricing: {
+      input: 0.40,
+      output: 1.60,
+    },
+    link: "https://platform.openai.com/docs/models/gpt-4.1-nano",
+    status: ModelStatus.Beta,
+  },
+  "o4-mini": {
+    provider: "openai",
+    creator: "openai",
+    name: "o4 mini",
+    description: "OpenAI's faster, more affordable reasoning model",
+    capabilities: ["thinking", "multimodal"],
+    pricing: {
+      input: 1.10,
+      output: 4.40,
+    },
+    link: "https://platform.openai.com/docs/models/o4-mini",
+    status: ModelStatus.Beta,
+  },
+  "o3": {
+    provider: "openai",
+    creator: "openai",
+    name: "o3",
+    description: "OpenAI's flagship GPT model for complex tasks",
+    capabilities: ["thinking", "multimodal"],
+    pricing: {
+      input: 10.00,
+      output: 40.00,
+    },
+    status: ModelStatus.Beta,
   },
 });
 
@@ -108,12 +213,16 @@ export type Capabilities = Static<typeof capabilitiesSchema>;
 // TODO: Add other models in the future
 export const modelSchema = Type.Object({
   id: Type.String({ examples: ["gemini-2.5-flash-preview-05-20"] }),
+  creator: modelCreatorSchema,
   provider: modelProviderSchema,
   name: Type.String({ examples: ["Gemini 2.5 Flash"] }),
   description: Type.String({ examples: ["Google's fast reasoning model"] }),
   capabilities: capabilitiesSchema,
   // contextWindow:
+  // maxOutputTokens:
+  // knowledgeCutoff: 2025-05-01
   pricing: modelPricingSchema,
+  link: Type.Optional(Type.String({ format: "uri" })),
   status: modelStatusSchema,
 });
 export type Model = Static<typeof modelSchema>;
