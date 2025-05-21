@@ -1,10 +1,10 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -21,6 +21,13 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  siAlibabadotcom,
+  siAnthropic,
+  siGooglegemini,
+  siMeta,
+  siOpenai,
+} from "simple-icons";
 import { ModelStatus } from "../../../../../../packages/models/src/model";
 
 export default function ChatInput() {
@@ -383,6 +390,10 @@ export default function ChatInput() {
     }
   };
 
+  let selectedModelDetails = Object.entries(AVAILABLE_MODELS).find(
+    ([id, _model]) => id === currentModel
+  );
+
   return (
     <>
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
@@ -517,22 +528,67 @@ export default function ChatInput() {
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select a model" />
+                    <SelectValue>
+                      {selectedModelDetails && (
+                        <div className="flex gap-2">
+                          <span className="mt-0.5">
+                            {renderCreatorIcon(selectedModelDetails[1].creator)}
+                          </span>
+                          <span>{selectedModelDetails[1].name}</span>
+                        </div>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectLabel>Models</SelectLabel>
+                      {/* <SelectLabel>Models</SelectLabel> */}
                       {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
-                        let labelSuffix = "";
-                        if (model.status === ModelStatus.Beta) {
-                          labelSuffix = " (Beta)";
-                        } else if (model.status === ModelStatus.Alpha) {
-                          labelSuffix = " (Alpha)";
-                        } else if (model.status === ModelStatus.Deprecated) {
-                          labelSuffix = " (Deprecated)";
-                        }
                         return (
                           <SelectItem key={id} value={id}>
-                            {model.name}{labelSuffix}
+                            <div className="flex items-start gap-2">
+                              {/* <div className="mt-0.5">{model.icon}</div> */}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {model.name}
+                                  </span>
+                                  {model.status === ModelStatus.Active && (
+                                    <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Active
+                                    </span>
+                                  )}
+                                  {model.status === ModelStatus.Alpha && (
+                                    <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Alpha
+                                    </span>
+                                  )}
+                                  {model.status === ModelStatus.Beta && (
+                                    <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Beta
+                                    </span>
+                                  )}
+                                  {model.status === ModelStatus.Deprecated && (
+                                    <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Deprecated
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {model.description}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {model.capabilities.map((capability) => (
+                                    <Badge
+                                      key={capability}
+                                      variant="outline"
+                                      className="mr-1"
+                                    >
+                                      {capability}
+                                    </Badge>
+                                  ))}
+                                </p>
+                              </div>
+                            </div>
                           </SelectItem>
                         );
                       })}
@@ -567,3 +623,36 @@ export default function ChatInput() {
     </>
   );
 }
+
+const renderCreatorIcon = (creator: string) => {
+  switch (creator) {
+    case "google":
+      return GetIconFromPath(siGooglegemini.hex, siGooglegemini.path);
+    case "anthropic":
+      return GetIconFromPath(siAnthropic.hex, siAnthropic.path);
+    case "openai":
+      return GetIconFromPath(siOpenai.hex, siOpenai.path);
+    case "meta":
+      return GetIconFromPath(siMeta.hex, siMeta.path);
+    case "deepseek":
+      return null;
+    case "alibaba":
+      return GetIconFromPath(siAlibabadotcom.hex, siAlibabadotcom.path);
+    default:
+      return null;
+  }
+};
+
+const GetIconFromPath = (color: string, path: string) => {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      fill={"#" + color}
+      width="24"
+      height="24"
+    >
+      <path d={path} />
+    </svg>
+  );
+};
