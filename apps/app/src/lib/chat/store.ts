@@ -20,7 +20,6 @@ interface ChatsState {
   // currentChatId: ConversationID | null;
   currentConversation: Conversation | null;
   isStreaming: boolean;
-  setStreaming: (buffer: Omit<StreamBuffer, "id"> | null) => void;
   streamBuffer: StreamBuffer | null;
   // TODO: chat caching
   // loadedMessages: Map<ConversationID, Conversation>;
@@ -28,6 +27,9 @@ interface ChatsState {
   // Chat functions
   setCurrentModel: (_: ModelId) => void;
   newChat: () => void;
+  setStreaming: (
+    _newBuffer: Partial<Omit<StreamBuffer, "id" | "lastUpdatedAt">> | null
+  ) => void;
   setConversation: (_c: Conversation) => void;
   addSection: (_id: ConversationID, _section: Section) => void;
   setSection: (
@@ -59,11 +61,11 @@ export const useChatsStore = create<ChatsState>((set) => ({
   currentConversation: null as Conversation | null,
   isStreaming: false,
   streamBuffer: null as StreamBuffer | null,
-  // loadedMessages: new Map<ConversationID, Conversation>(),
 
   setCurrentModel: (modelId: ModelId) => {
     set({ currentModel: modelId });
   },
+
   newChat: () => {
     set((_) => {
       // TODO: register with server
@@ -82,13 +84,18 @@ export const useChatsStore = create<ChatsState>((set) => ({
     });
   },
 
-  setStreaming: (buffer: Omit<StreamBuffer, "id"> | null) => {
+  setStreaming: (
+    newBuffer: Partial<Omit<StreamBuffer, "id" | "lastUpdatedAt">> | null
+  ) => {
     set(({ currentConversation }) => ({
-      isStreaming: !!buffer,
-      streamBuffer: buffer
+      isStreaming: !(!newBuffer || !!newBuffer?.error), // not streaming if no buffer or buffer has error
+      streamBuffer: newBuffer
         ? {
             id: currentConversation?.id ?? "",
-            ...buffer,
+            messageId: newBuffer?.messageId ?? "",
+            words: newBuffer?.words ?? [],
+            lastUpdatedAt: new Date().getTime(),
+            error: newBuffer?.error ?? null,
           }
         : null,
     }));

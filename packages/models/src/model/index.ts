@@ -7,6 +7,13 @@ export const modelIdSchema = Type.Union([
   Type.Literal("gemini-2.0-flash"),
   Type.Literal("gemini-2.5-flash-preview-05-20"),
   Type.Literal("gemini-2.5-pro-preview-05-06"),
+  Type.Literal("gpt-4o"),
+  Type.Literal("gpt-4.1"),
+  Type.Literal("gpt-4.1-mini"),
+  Type.Literal("gpt-4.1-nano"),
+  Type.Literal("o4-mini"),
+  Type.Literal("o3"),
+  Type.Literal("claude-3-7-sonnet-20250219"),
 ]);
 export type ModelId = Static<typeof modelIdSchema>;
 
@@ -29,164 +36,210 @@ export const modelCreatorSchema = Type.Union([
 export type ModelCreator = Static<typeof modelCreatorSchema>;
 
 // TODO: Add links
-export const MODELS: Readonly<Record<ModelId, Omit<Model, "id">>> = Object.freeze({
-  "qwen3:1.7b": {
-    provider: "ollama",
-    creator: "alibaba",
-    name: "Qwen 3 1.7B",
-    description: "Qwen 3 1.7B",
-    capabilities: ["thinking"],
-    pricing: {
-      input: 0.0,
-      output: 0.0,
-    },
-    status: ModelStatus.Beta,
-  },
-  "gemini-2.0-flash": {
-    provider: "google-generative-ai",
-    creator: "google",
-    name: "Gemini 2.0 Flash",
-    description: "Google's fast model",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: {
-        text: 0.1,
-        image: 0.1,
-        audio: 0.7,
-        video: 0.4,
+export const MODELS: Readonly<
+  Record<ModelCreator, [ModelId, Omit<Model, "id">][]>
+> = Object.freeze({
+  alibaba: [
+    [
+      "qwen3:1.7b",
+      {
+        provider: "ollama",
+        creator: "alibaba",
+        name: "Qwen 3 1.7B",
+        description: "Qwen 3 1.7B",
+        capabilities: ["thinking"],
+        pricing: {
+          input: 0.0,
+          output: 0.0,
+        },
+        status: ModelStatus.Beta,
       },
-      output: 0.4,
-    },
-    status: ModelStatus.Beta,
-  },
-  "gemini-2.5-flash-preview-05-20": {
-    provider: "google-generative-ai",
-    creator: "google",
-    name: "Gemini 2.5 Flash",
-    description: "Google's fast reasoning model",
-    capabilities: ["thinking", "multimodal"],
-    pricing: {
-      input: {
-        text: 0.15,
-        image: 0.15,
-        audio: 1.0,
-        video: 0.15,
+    ],
+  ],
+  google: [
+    [
+      "gemini-2.0-flash",
+      {
+        provider: "google-generative-ai",
+        creator: "google",
+        name: "Gemini 2.0 Flash",
+        description: "Google's fast model",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: {
+            text: 0.1,
+            image: 0.1,
+            audio: 0.7,
+            video: 0.4,
+          },
+          output: 0.4,
+        },
+        status: ModelStatus.Beta,
       },
-      output: {
-        nonThinking: 0.6,
-        thinking: 3.5,
+    ],
+    [
+      "gemini-2.5-flash-preview-05-20",
+      {
+        provider: "google-generative-ai",
+        creator: "google",
+        name: "Gemini 2.5 Flash",
+        description: "Google's fast reasoning model",
+        capabilities: ["thinking", "multimodal"],
+        pricing: {
+          input: {
+            text: 0.15,
+            image: 0.15,
+            audio: 1.0,
+            video: 0.15,
+          },
+          output: {
+            nonThinking: 0.6,
+            thinking: 3.5,
+          },
+        },
+        status: ModelStatus.Beta,
       },
-    },
-    status: ModelStatus.Beta,
-  },
-  "gemini-2.5-pro-preview-05-06": {
-    provider: "google-generative-ai",
-    creator: "google",
-    name: "Gemini 2.5 Pro",
-    description: "Google's advanced reasoning model",
-    capabilities: ["thinking", "multimodal"],
-    pricing: {
-      input: {
-        cutoff: 200_000,
-        lower: 1.25,
-        upper: 2.5,
+    ],
+    [
+      "gemini-2.5-pro-preview-05-06",
+      {
+        provider: "google-generative-ai",
+        creator: "google",
+        name: "Gemini 2.5 Pro",
+        description: "Google's advanced reasoning model",
+        capabilities: ["thinking", "multimodal"],
+        pricing: {
+          input: {
+            cutoff: 200_000,
+            lower: 1.25,
+            upper: 2.5,
+          },
+          output: {
+            cutoff: 200_000,
+            lower: 10.0,
+            upper: 15.0,
+          },
+        },
+        status: ModelStatus.Beta,
       },
-      output: {
-        cutoff: 200_000,
-        lower: 10.0,
-        upper: 15.0,
+    ],
+  ],
+  anthropic: [
+    [
+      "claude-3-7-sonnet-20250219",
+      {
+        provider: "anthropic",
+        creator: "anthropic",
+        name: "Claude 3.7 Sonnet",
+        description: "Cladue's flagship model for complex tasks",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: 2.5,
+          output: 10.0,
+        },
+        status: ModelStatus.Deprecated,
+      }, // TODO: How to do thinking?
+    ],
+  ],
+  meta: [],
+  deepseek: [],
+  openai: [
+    [
+      "gpt-4o",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "GPT-4o",
+        description: "OpenAI's fast, intelligent, flexible GPT model",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: 2.5,
+          output: 10.0,
+        },
+        status: ModelStatus.Deprecated,
       },
-    },
-    status: ModelStatus.Beta,
-  },
-  "claude-3-7-sonnet-20250219": {
-    provider: "anthropic",
-    creator: "anthropic",
-    name: "Claude 3.7 Sonnet",
-    description: "Cladue's flagship model for complex tasks",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: 2.50,
-      output: 10.00,
-    },
-    status: ModelStatus.Deprecated,
-  }, // TODO: How to do thinking?
-  "gpt-4o": {
-    provider: "openai",
-    creator: "openai",
-    name: "GPT-4o",
-    description: "OpenAI's fast, intelligent, flexible GPT model",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: 2.50,
-      output: 10.00,
-    },
-    status: ModelStatus.Deprecated,
-  },
-  "gpt-4.1": {
-    provider: "openai",
-    creator: "openai",
-    name: "GPT-4.1",
-    description: "OpenAI's flagship GPT model for complex tasks",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: 2.00,
-      output: 8.00,
-    },
-    link: "https://platform.openai.com/docs/models/gpt-4.1",
-    status: ModelStatus.Beta,
-  },
-  "gpt-4.1-mini": {
-    provider: "openai",
-    creator: "openai",
-    name: "GPT-4.1 mini",
-    description: "OpenAI's GPT-4.1 but balanced for intelligence, speed, and cost",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: 0.40,
-      output: 1.60,
-    },
-    link: "https://platform.openai.com/docs/models/gpt-4.1-mini",
-    status: ModelStatus.Beta,
-  },
-  "gpt-4.1-nano": {
-    provider: "openai",
-    creator: "openai",
-    name: "GPT-4.1 nano",
-    description: "OpenAI's fastest, most cost-effective GPT-4.1 model",
-    capabilities: ["multimodal"],
-    pricing: {
-      input: 0.40,
-      output: 1.60,
-    },
-    link: "https://platform.openai.com/docs/models/gpt-4.1-nano",
-    status: ModelStatus.Beta,
-  },
-  "o4-mini": {
-    provider: "openai",
-    creator: "openai",
-    name: "o4 mini",
-    description: "OpenAI's faster, more affordable reasoning model",
-    capabilities: ["thinking", "multimodal"],
-    pricing: {
-      input: 1.10,
-      output: 4.40,
-    },
-    link: "https://platform.openai.com/docs/models/o4-mini",
-    status: ModelStatus.Beta,
-  },
-  "o3": {
-    provider: "openai",
-    creator: "openai",
-    name: "o3",
-    description: "OpenAI's flagship GPT model for complex tasks",
-    capabilities: ["thinking", "multimodal"],
-    pricing: {
-      input: 10.00,
-      output: 40.00,
-    },
-    status: ModelStatus.Beta,
-  },
+    ],
+    [
+      "gpt-4.1",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "GPT-4.1",
+        description: "OpenAI's flagship GPT model for complex tasks",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: 2.0,
+          output: 8.0,
+        },
+        link: "https://platform.openai.com/docs/models/gpt-4.1",
+        status: ModelStatus.Beta,
+      },
+    ],
+    [
+      "gpt-4.1-mini",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "GPT-4.1 mini",
+        description:
+          "OpenAI's GPT-4.1 but balanced for intelligence, speed, and cost",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: 0.4,
+          output: 1.6,
+        },
+        link: "https://platform.openai.com/docs/models/gpt-4.1-mini",
+        status: ModelStatus.Beta,
+      },
+    ],
+    [
+      "gpt-4.1-nano",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "GPT-4.1 nano",
+        description: "OpenAI's fastest, most cost-effective GPT-4.1 model",
+        capabilities: ["multimodal"],
+        pricing: {
+          input: 0.4,
+          output: 1.6,
+        },
+        link: "https://platform.openai.com/docs/models/gpt-4.1-nano",
+        status: ModelStatus.Beta,
+      },
+    ],
+    [
+      "o4-mini",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "o4 mini",
+        description: "OpenAI's faster, more affordable reasoning model",
+        capabilities: ["thinking", "multimodal"],
+        pricing: {
+          input: 1.1,
+          output: 4.4,
+        },
+        link: "https://platform.openai.com/docs/models/o4-mini",
+        status: ModelStatus.Beta,
+      },
+    ],
+    [
+      "o3",
+      {
+        provider: "openai",
+        creator: "openai",
+        name: "o3",
+        description: "OpenAI's flagship GPT model for complex tasks",
+        capabilities: ["thinking", "multimodal"],
+        pricing: {
+          input: 10.0,
+          output: 40.0,
+        },
+        status: ModelStatus.Beta,
+      },
+    ],
+  ],
 });
 
 // TODO: In the future, this pricing should have a cost multiplier
