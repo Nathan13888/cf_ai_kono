@@ -112,7 +112,7 @@ export default function ChatInference() {
           
           {/* Right item */}
           {
-            isLoggedIn ? (
+            isLoggedIn() ? (
               <ProfileButton />
             ) : (
               <Button
