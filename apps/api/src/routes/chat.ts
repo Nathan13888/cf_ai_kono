@@ -1,14 +1,14 @@
-import { anthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
-import { openai } from '@ai-sdk/openai';
-import { MODELS, type Model, type ModelId, modelIdSchema } from '@kono/models';
-import { Type } from '@sinclair/typebox';
-import { type LanguageModel, streamText } from 'ai';
-import { Hono } from 'hono';
-import { describeRoute } from 'hono-openapi';
-import { resolver, validator } from 'hono-openapi/typebox';
-import { streamText as stream } from 'hono/streaming';
-import { ollama } from 'ollama-ai-provider';
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
+import { MODELS, type Model, type ModelId, modelIdSchema } from "@kono/models";
+import { Type } from "@sinclair/typebox";
+import { type LanguageModel, streamText } from "ai";
+import { Hono } from "hono";
+import { describeRoute } from "hono-openapi";
+import { resolver, validator } from "hono-openapi/typebox";
+import { streamText as stream } from "hono/streaming";
+import { ollama } from "ollama-ai-provider";
 
 /**
  * Convert a model ID to a LanguageModel instance.
@@ -17,7 +17,7 @@ import { ollama } from 'ollama-ai-provider';
  */
 function modelIdToLM(modelId: ModelId): LanguageModel | undefined {
     // Get model entry
-    const model: Omit<Model, 'id'> | undefined = Object.entries(MODELS).find(
+    const model: Omit<Model, "id"> | undefined = Object.entries(MODELS).find(
         ([id]) => id === modelId,
     )?.[1];
     if (!model) {
@@ -25,13 +25,13 @@ function modelIdToLM(modelId: ModelId): LanguageModel | undefined {
     }
 
     switch (model.provider) {
-        case 'ollama':
+        case "ollama":
             return ollama(modelId); // TODO: Make the API key to a URL by env variable to support remote servers
-        case 'google-generative-ai':
+        case "google-generative-ai":
             return google(modelId);
-        case 'openai':
+        case "openai":
             return openai(modelId);
-        case 'anthropic':
+        case "anthropic":
             return anthropic(modelId);
         default:
             // TODO: How to do exhaustive check?
@@ -43,9 +43,9 @@ const chatRequestSchema = Type.Object({
     messages: Type.Array(
         Type.Object({
             role: Type.Union([
-                Type.Literal('user'),
-                Type.Literal('assistant'),
-                Type.Literal('system'),
+                Type.Literal("user"),
+                Type.Literal("assistant"),
+                Type.Literal("system"),
             ]),
             content: Type.String(),
         }),
@@ -76,15 +76,15 @@ const chatQuerySchema = Type.Object({
 const chatResponseSchema = Type.String();
 
 const app = new Hono().post(
-    '/',
+    "/",
     describeRoute({
-        summary: 'Chat test',
-        description: 'Chat test',
+        summary: "Chat test",
+        description: "Chat test",
         // parameters:
         requestBody: {
-            description: 'LLM messages',
+            description: "LLM messages",
             content: {
-                'application/json': {
+                "application/json": {
                     schema: chatRequestSchema,
                 },
             },
@@ -93,17 +93,17 @@ const app = new Hono().post(
         // validateResponse: true,
         responses: {
             200: {
-                description: 'LLM Output',
+                description: "LLM Output",
                 content: {
-                    'text/plain': {
+                    "text/plain": {
                         schema: resolver(chatResponseSchema),
                     },
                 },
             },
             400: {
-                description: 'Bad Request',
+                description: "Bad Request",
                 content: {
-                    'application/json': {
+                    "application/json": {
                         schema: Type.Object({
                             error: Type.String(),
                         }),
@@ -112,13 +112,13 @@ const app = new Hono().post(
             },
         },
     }),
-    validator('query', chatQuerySchema),
-    validator('json', chatRequestSchema),
+    validator("query", chatQuerySchema),
+    validator("json", chatRequestSchema),
     async (c) => {
-        const query = c.req.valid('query');
-        const body = c.req.valid('json');
-        console.log('query', query); // TODO
-        console.log('body', body); // TODO
+        const query = c.req.valid("query");
+        const body = c.req.valid("json");
+        console.log("query", query); // TODO
+        console.log("body", body); // TODO
         const model = modelIdToLM(query.modelId);
 
         if (!model) {
@@ -137,7 +137,7 @@ const app = new Hono().post(
         });
         const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
 
-        c.header('Content-Encoding', 'Identity');
+        c.header("Content-Encoding", "Identity");
         return stream(
             c,
             async (stream) => {
@@ -155,7 +155,7 @@ const app = new Hono().post(
                 // await stream.write(`Hosdfno.`);
             },
             async (err, stream) => {
-                stream.writeln('An error occurred!');
+                stream.writeln("An error occurred!");
                 console.error(err);
             },
         );

@@ -1,6 +1,6 @@
-import type { Hono } from 'hono';
-import { openAPISpecs } from 'hono-openapi';
-import type { BlankEnv, BlankSchema, Env, Schema } from 'hono/types';
+import type { Hono } from "hono";
+import { openAPISpecs } from "hono-openapi";
+import type { BlankEnv, BlankSchema, Env, Schema } from "hono/types";
 
 export function getOpenapi<
     E extends Env = BlankEnv,
@@ -10,12 +10,12 @@ export function getOpenapi<
     return openAPISpecs(app, {
         documentation: {
             info: {
-                title: 'Kono Chat API',
-                version: '1.0.0', // TODO: keep in sync with package.json?
-                description: 'API for Kono Chat',
+                title: "Kono Chat API",
+                version: "1.0.0", // TODO: keep in sync with package.json?
+                description: "API for Kono Chat",
             },
             servers: [
-                { url: 'http://localhost:8787', description: 'Local Server' },
+                { url: "http://localhost:8787", description: "Local Server" },
             ],
             // components: {
             //   securitySchemes: {

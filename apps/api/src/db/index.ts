@@ -1,5 +1,5 @@
-import { type DrizzleD1Database, drizzle } from 'drizzle-orm/d1';
-import { createMiddleware } from 'hono/factory';
+import { type DrizzleD1Database, drizzle } from "drizzle-orm/d1";
+import { createMiddleware } from "hono/factory";
 
 interface DbBindings {
     db: DrizzleD1Database<Record<string, never>> & {
@@ -18,7 +18,7 @@ export const dbMiddleware = createMiddleware<{
     Variables: DbBindings;
 }>(async (c, next) => {
     const db = await getDb(c.env.DB);
-    c.set('db', db);
+    c.set("db", db);
     await next();
 });
 

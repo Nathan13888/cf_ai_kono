@@ -1,11 +1,11 @@
-import { pinoLogger } from 'hono-pino';
+import { pinoLogger } from "hono-pino";
 
 export function createLogger() {
     return pinoLogger({
         pino: {
-            level: 'debug',
+            level: "debug",
             transport: {
-                target: 'pino-pretty',
+                target: "pino-pretty",
                 options: {
                     colorize: true,
                 },

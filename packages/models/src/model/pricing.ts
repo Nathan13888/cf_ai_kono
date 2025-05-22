@@ -1,4 +1,4 @@
-import { type Static, Type } from '@sinclair/typebox';
+import { type Static, Type } from "@sinclair/typebox";
 
 /** US$/1M tokens */
 export const flatPricingSchema = Type.Number({ examples: [0.15] });

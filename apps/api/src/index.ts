@@ -1,10 +1,10 @@
-import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 
-import { createLogger } from '@/logger';
-import { app as route_app } from '@/route';
-import { getOpenapi } from '@/routes/openapi';
-import { Scalar } from '@scalar/hono-api-reference';
+import { createLogger } from "@/logger";
+import { app as route_app } from "@/route";
+import { getOpenapi } from "@/routes/openapi";
+import { Scalar } from "@scalar/hono-api-reference";
 
 const app = route_app;
 // TODO: Integrate test code to anywhere vv
@@ -29,8 +29,8 @@ const app = route_app;
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {
-    app.get('/openapi', getOpenapi(app));
-    app.get('/scalar', Scalar({ url: '/openapi' }));
+    app.get("/openapi", getOpenapi(app));
+    app.get("/scalar", Scalar({ url: "/openapi" }));
     app.use(logger());
 }
 

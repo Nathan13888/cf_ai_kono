@@ -1,22 +1,22 @@
-import { MODELS, type Model, modelSchema } from '@kono/models';
-import { Type } from '@sinclair/typebox';
-import { Hono } from 'hono';
-import { describeRoute } from 'hono-openapi';
-import { resolver } from 'hono-openapi/typebox';
+import { MODELS, type Model, modelSchema } from "@kono/models";
+import { Type } from "@sinclair/typebox";
+import { Hono } from "hono";
+import { describeRoute } from "hono-openapi";
+import { resolver } from "hono-openapi/typebox";
 
 const modelResponseSchema = modelSchema;
 const modelsResponseSchema = Type.Array(modelSchema);
 
 const app = new Hono().get(
-    '/',
+    "/",
     describeRoute({
-        summary: 'Get all models',
-        description: 'Get all models',
+        summary: "Get all models",
+        description: "Get all models",
         responses: {
             200: {
-                description: 'List of models',
+                description: "List of models",
                 content: {
-                    'application/json': {
+                    "application/json": {
                         schema: resolver(modelsResponseSchema),
                     },
                 },
