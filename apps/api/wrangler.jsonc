@@ -1,39 +1,37 @@
 {
-  "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "kono-api",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-05-11",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "kono-chat",
-      "database_id": "33308e47-5118-41fc-a0eb-d7acdde82d00",
-      "migrations_dir": "drizzle/migrations"
-    }
-  ],
-  // "ai": {
-  //   "binding": "AI"
-  // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
+    "$schema": "../../node_modules/wrangler/config-schema.json",
+    "name": "kono-api",
+    "main": "src/index.ts",
+    "compatibility_date": "2025-05-11",
+    "compatibility_flags": ["nodejs_compat"],
+    // "vars": {
+    //   "MY_VAR": "my-variable"
+    // },
+    // "kv_namespaces": [
+    //   {
+    //     "binding": "MY_KV_NAMESPACE",
+    //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    //   }
+    // ],
+    // "r2_buckets": [
+    //   {
+    //     "binding": "MY_BUCKET",
+    //     "bucket_name": "my-bucket"
+    //   }
+    // ],
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "kono-chat",
+            "database_id": "33308e47-5118-41fc-a0eb-d7acdde82d00",
+            "migrations_dir": "drizzle/migrations"
+        }
+    ]
+    // "ai": {
+    //   "binding": "AI"
+    // },
+    // "observability": {
+    //   "enabled": true,
+    //   "head_sampling_rate": 1
+    // }
 }

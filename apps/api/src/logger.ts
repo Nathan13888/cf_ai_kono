@@ -1,15 +1,15 @@
-import { pinoLogger } from "hono-pino";
+import { pinoLogger } from 'hono-pino';
 
 export function createLogger() {
-  return pinoLogger({
-    pino: {
-      level: "debug",
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
+    return pinoLogger({
+        pino: {
+            level: 'debug',
+            transport: {
+                target: 'pino-pretty',
+                options: {
+                    colorize: true,
+                },
+            }, // TODO: Use JSON logging for prod
         },
-      }, // TODO: Use JSON logging for prod
-    },
-  });
+    });
 }

@@ -1,14 +1,14 @@
+import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { type Model, type ModelId, modelIdSchema, MODELS } from "@kono/models";
-import { Type } from "@sinclair/typebox";
-import { type LanguageModel, streamText } from "ai";
-import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator } from "hono-openapi/typebox";
-import { streamText as stream } from "hono/streaming";
-import { ollama } from "ollama-ai-provider";
+import { MODELS, type Model, type ModelId, modelIdSchema } from '@kono/models';
+import { Type } from '@sinclair/typebox';
+import { type LanguageModel, streamText } from 'ai';
+import { Hono } from 'hono';
+import { describeRoute } from 'hono-openapi';
+import { resolver, validator } from 'hono-openapi/typebox';
+import { streamText as stream } from 'hono/streaming';
+import { ollama } from 'ollama-ai-provider';
 
 /**
  * Convert a model ID to a LanguageModel instance.
@@ -16,52 +16,54 @@ import { ollama } from "ollama-ai-provider";
  * @returns [LanguageModel] if model ID is valid, otherwise undefined
  */
 function modelIdToLM(modelId: ModelId): LanguageModel | undefined {
-  // Get model entry
-  const model: Omit<Model, "id"> | undefined = Object.entries(MODELS).find(([id]) => id === modelId)?.[1];
-  if (!model) {
-    return undefined;
-  }
+    // Get model entry
+    const model: Omit<Model, 'id'> | undefined = Object.entries(MODELS).find(
+        ([id]) => id === modelId,
+    )?.[1];
+    if (!model) {
+        return undefined;
+    }
 
-  switch (model.provider) {
-    case "ollama":
-      return ollama(modelId); // TODO: Make the API key to a URL by env variable to support remote servers
-    case "google-generative-ai":
-      return google(modelId);
-    case "openai":
-      return openai(modelId);
-    case "anthropic":
-      return anthropic(modelId);
-    default:
-      // TODO: How to do exhaustive check?
-      return undefined;
-  }
+    switch (model.provider) {
+        case 'ollama':
+            return ollama(modelId); // TODO: Make the API key to a URL by env variable to support remote servers
+        case 'google-generative-ai':
+            return google(modelId);
+        case 'openai':
+            return openai(modelId);
+        case 'anthropic':
+            return anthropic(modelId);
+        default:
+            // TODO: How to do exhaustive check?
+            return undefined;
+    }
 }
 
 const chatRequestSchema = Type.Object({
-  messages: Type.Array(
-    Type.Object({
-      role: Type.Union([
-        Type.Literal("user"),
-        Type.Literal("assistant"),
-        Type.Literal("system"),
-      ]),
-      content: Type.String(),
-    })
-  ), // TODO: Make this a bigger subset to match AI SDK capabilities
+    messages: Type.Array(
+        Type.Object({
+            role: Type.Union([
+                Type.Literal('user'),
+                Type.Literal('assistant'),
+                Type.Literal('system'),
+            ]),
+            content: Type.String(),
+        }),
+    ), // TODO: Make this a bigger subset to match AI SDK capabilities
 });
 
 const chatQuerySchema = Type.Object({
-  modelId: modelIdSchema, // TODO: Add more models later
-  // temperature: Type.Optional(Type.Number()),
-  // top_p: Type.Optional(Type.Number()),
-  // max_tokens: Type.Optional(Type.Number()),
-  // stop: Type.Optional(Type.String()),
-  // stream: Type.Optional(Type.Boolean()),
-  // presence_penalty: Type.Optional(Type.Number()),
-  // frequency_penalty: Type.Optional(Type.Number()),
-  // logit_bias: Type.Optional(Type.String()),
-  // user: Type.Optional(Type.String()),
-  // n: Type.Optional(Type.Number()),
+    modelId: modelIdSchema, // TODO: Add more models later
+    // temperature: Type.Optional(Type.Number()),
+    // top_p: Type.Optional(Type.Number()),
+    // max_tokens: Type.Optional(Type.Number()),
+    // stop: Type.Optional(Type.String()),
+    // stream: Type.Optional(Type.Boolean()),
+    // presence_penalty: Type.Optional(Type.Number()),
+    // frequency_penalty: Type.Optional(Type.Number()),
+    // logit_bias: Type.Optional(Type.String()),
+    // user: Type.Optional(Type.String()),
+    // n: Type.Optional(Type.Number()),
 });
 // .openapi({
 //   ref: "Query",
@@ -74,103 +76,103 @@ const chatQuerySchema = Type.Object({
 const chatResponseSchema = Type.String();
 
 const app = new Hono().post(
-  "/",
-  describeRoute({
-    summary: "Chat test",
-    description: "Chat test",
-    // parameters:
-    requestBody: {
-      description: "LLM messages",
-      content: {
-        "application/json": {
-          schema: chatRequestSchema,
+    '/',
+    describeRoute({
+        summary: 'Chat test',
+        description: 'Chat test',
+        // parameters:
+        requestBody: {
+            description: 'LLM messages',
+            content: {
+                'application/json': {
+                    schema: chatRequestSchema,
+                },
+            },
+            required: true,
         },
-      },
-      required: true,
-    },
-    // validateResponse: true,
-    responses: {
-      200: {
-        description: "LLM Output",
-        content: {
-          "text/plain": {
-            schema: resolver(chatResponseSchema),
-          },
+        // validateResponse: true,
+        responses: {
+            200: {
+                description: 'LLM Output',
+                content: {
+                    'text/plain': {
+                        schema: resolver(chatResponseSchema),
+                    },
+                },
+            },
+            400: {
+                description: 'Bad Request',
+                content: {
+                    'application/json': {
+                        schema: Type.Object({
+                            error: Type.String(),
+                        }),
+                    },
+                },
+            },
         },
-      },
-      400: {
-        description: "Bad Request",
-        content: {
-          "application/json": {
-            schema: Type.Object({
-              error: Type.String(),
-            }),
-          },
-        },
-      }
-    },
-  }),
-  validator("query", chatQuerySchema),
-  validator("json", chatRequestSchema),
-  async (c) => {
-    const query = c.req.valid("query");
-    const body = c.req.valid("json");
-    console.log("query", query); // TODO
-    console.log("body", body); // TODO
-    const model = modelIdToLM(query.modelId);
+    }),
+    validator('query', chatQuerySchema),
+    validator('json', chatRequestSchema),
+    async (c) => {
+        const query = c.req.valid('query');
+        const body = c.req.valid('json');
+        console.log('query', query); // TODO
+        console.log('body', body); // TODO
+        const model = modelIdToLM(query.modelId);
 
-    if (!model) {
-      return c.json(
-        {
-          error: `Model ${query.modelId} not found`,
-        },
-        400
-      );
-    }
-
-    const result = await streamText({
-      model: model,
-      // system: "", // TODO: Make system prompt configurable
-      messages: body.messages,
-    });
-    const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
-
-    c.header("Content-Encoding", "Identity");
-    return stream(
-      c,
-      async (stream) => {
-        const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
-        for await (const textPart of textStream) {
-          message.push(textPart);
-          // console.log("message:", message);
-          await stream.write(textPart);
+        if (!model) {
+            return c.json(
+                {
+                    error: `Model ${query.modelId} not found`,
+                },
+                400,
+            );
         }
-        // /// Write a text with a new line ('\n').
-        // await stream.writeln("Hello");
-        // // Wait 1 second.
-        // await stream.sleep(5000);
-        // // Write a text without a new line.
-        // await stream.write(`Hosdfno.`);
-      },
-      async (err, stream) => {
-        stream.writeln("An error occurred!");
-        console.error(err);
-      }
-    );
-    // TODO: Clean up properly if either client or model API drops
 
-    // return streamSSE(c, async (stream) => {
-    //   while (true) {
-    //     const message = `It is ${new Date().toISOString()}`;
-    //     await stream.writeSSE({
-    //       data: message,
-    //       event: "time-update",
-    //       id: String(id++),
-    //     });
-    //     await stream.sleep(1000);
-    //   }
-    // });
-  }
+        const result = await streamText({
+            model: model,
+            // system: "", // TODO: Make system prompt configurable
+            messages: body.messages,
+        });
+        const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
+
+        c.header('Content-Encoding', 'Identity');
+        return stream(
+            c,
+            async (stream) => {
+                const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
+                for await (const textPart of textStream) {
+                    message.push(textPart);
+                    // console.log("message:", message);
+                    await stream.write(textPart);
+                }
+                // /// Write a text with a new line ('\n').
+                // await stream.writeln("Hello");
+                // // Wait 1 second.
+                // await stream.sleep(5000);
+                // // Write a text without a new line.
+                // await stream.write(`Hosdfno.`);
+            },
+            async (err, stream) => {
+                stream.writeln('An error occurred!');
+                console.error(err);
+            },
+        );
+        // TODO: Clean up properly if either client or model API drops
+
+        // return streamSSE(c, async (stream) => {
+        //   while (true) {
+        //     const message = `It is ${new Date().toISOString()}`;
+        //     await stream.writeSSE({
+        //       data: message,
+        //       event: "time-update",
+        //       id: String(id++),
+        //     });
+        //     await stream.sleep(1000);
+        //   }
+        // });
+    },
 );
 
 export default app;
