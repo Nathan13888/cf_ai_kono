@@ -1,1 +1,1 @@
-export type { AppType } from ".";
+export type { AppType } from "./route";

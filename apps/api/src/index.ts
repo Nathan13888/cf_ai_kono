@@ -1,22 +1,16 @@
-import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { createLogger } from "@/logger";
-import auth from "@/routes/auth";
-import chat from "@/routes/chat";
+import { app as route_app } from "@/route";
 import { getOpenapi } from "@/routes/openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import models from "./routes/models";
 
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+const app = route_app
   .use(createLogger())
   .use(
     cors({
-      origin: [
-        "http://localhost:1420",
-        "https://kono.chat",
-      ],
+      origin: ["http://localhost:1420", "https://kono.chat"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["Authorization", "Content-Type"],
       maxAge: 3600,
@@ -38,10 +32,6 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 
     return c.text("Hello Hono!");
   }); // TODO: Remove
-const routes = app
-  .route("/auth", auth)
-  .route("/chat", chat)
-  .route("/models", models);
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {
@@ -51,4 +41,3 @@ if (isDevelopment) {
 }
 
 export default app;
-export type AppType = typeof routes;
