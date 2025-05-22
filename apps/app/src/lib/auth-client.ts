@@ -1,5 +1,6 @@
 //! For Better-Auth
 
+import { ParsedLocation, redirect } from "@tanstack/react-router";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
@@ -12,4 +13,20 @@ export async function isAuthenticated(): Promise<boolean> {
   return authClient.getSession().then((session) => {
     return !!session.data;
   })
+}
+
+/**
+ * Check if the user is authenticated. If not, redirect to the login page.
+ */
+export async function checkAuthenticated(location: ParsedLocation): Promise<void> {
+  if (!(await isAuthenticated())) {
+    // Not logged in
+    redirect({
+      to: "/login",
+      search: {
+        redirect: location.href,
+      },
+      throw: true,
+    })
+  }
 }

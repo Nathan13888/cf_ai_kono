@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { authClient, checkAuthenticated } from "@/lib/auth-client";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/profile")({
+  beforeLoad: async ({ location }) => checkAuthenticated(location),
   component: RouteComponent,
 });
 
