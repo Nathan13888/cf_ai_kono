@@ -49,6 +49,13 @@ View local D1 database by Wrangler:
 bun run db:view
 ```
 
+Useful d1 commands:
+
+```sh
+bunx wrangler d1 list
+bunx wrangler d1 info kono-chat
+```
+
 ## Obtaining API Keys
 
 - Google AI Studio (e.g. Gemini): <https://aistudio.google.com/apikey>
