@@ -34,11 +34,11 @@ export async function checkAuthenticated(location: ParsedLocation): Promise<void
 /**
  * Logout user and redirect to login page
  */
-export async function logout(withToast = false) {
+export async function logout(props: {withToast: boolean} = { withToast: false }) {
   return authClient.signOut({
     fetchOptions: {
       onSuccess: () => {
-        if (withToast) {
+        if (props.withToast) {
           // TODO: Add toast
         }
         redirect({
@@ -46,6 +46,10 @@ export async function logout(withToast = false) {
           throw: true,
         })
       },
+      // TODO: Add error handling
+      // onError: (error) => {
+      //   console.error("Error signing out", error);  
+      // }
     },
   })
 }

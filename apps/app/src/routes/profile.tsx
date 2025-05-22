@@ -41,7 +41,7 @@ function RouteComponent() {
       <p>{session?.user?.email}</p>
       <pre>{JSON.stringify(session, null, 2)}</pre>
       <Button
-        onClick={async () => logout}
+        onClick={async () => logout({ withToast: true })}
       >
         Sign out
       </Button>
