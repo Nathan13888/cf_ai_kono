@@ -1,9 +1,11 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from '@sinclair/typebox';
 
 export enum ModelStatus {
-  Active = "active",
-  Alpha = "alpha",
-  Beta = "beta",
-  Deprecated = "deprecated",
+    Active = 'active',
+    Alpha = 'alpha',
+    Beta = 'beta',
+    Deprecated = 'deprecated',
 }
-export const modelStatusSchema = Type.Enum(ModelStatus, { default: ModelStatus.Active });
+export const modelStatusSchema = Type.Enum(ModelStatus, {
+    default: ModelStatus.Active,
+});
