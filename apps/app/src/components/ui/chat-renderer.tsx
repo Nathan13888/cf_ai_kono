@@ -23,7 +23,9 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
           // Style code blocks
-          code({ inline, className, children, ...props }) {
+          code({ className, children, ...props }) {
+            // TODO(high,md): implement dis shit
+            const inline = true;
             return (
               <code
                 className={cn(

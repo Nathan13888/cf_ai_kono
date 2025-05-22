@@ -1,17 +1,17 @@
-import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
+import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [
-    TanStackRouterVite({ target: 'react', autoCodeSplitting: true }),
+    TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
     react(),
-    tailwindcss()
+    tailwindcss(),
   ],
   resolve: {
     alias: {
@@ -48,6 +48,7 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       input: {
+        app: path.basename(__dirname, "index.html"),
         main: path.basename(__dirname, "index.html"),
         spotlight: path.resolve(__dirname, "spotlight.html"),
       },
