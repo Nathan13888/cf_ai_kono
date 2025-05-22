@@ -2,20 +2,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import "@/root.css";
 import { FALLBACK_ROUTE } from "@/constant";
+import "@/root.css";
 
 const queryClient = new QueryClient();
 
 export const Route = createRootRoute({
   component: () => (
-    <main className="flex flex-col w-full h-screen overflow-hidden bg-gray-50 overscroll-none touch-none">
-      <QueryClientProvider client={queryClient}>
-        <Outlet />
-        <TanStackRouterDevtools />
-      </QueryClientProvider>
-    </main>
-    //   {/* <div className="flex gap-2 p-2">
+    <>
+      <main className="flex flex-col w-full h-screen overflow-hidden bg-gray-50 overscroll-none touch-none">
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+        </QueryClientProvider>
+      </main>
+      <TanStackRouterDevtools />
+      //{" "}
+      {/* <div className="flex gap-2 p-2">
     //     <Link to="/" className="[&.active]:font-bold">
     //       Home
     //     </Link>{' '}
@@ -24,6 +26,7 @@ export const Route = createRootRoute({
     //     </Link>
     //   </div>
     //   <hr /> */}
+    </>
   ),
   notFoundComponent: () => {
     // redirect({
