@@ -1,9 +1,11 @@
 import { getDb } from "@/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+// import { openAPI } from "better-auth/plugins"
 
 import * as authSchema from "@/db/auth-schema";
 
+// TODO: Fetch D1 database from env instead of bindings
 // TODO: Use rate limiting with cloudflare because better auth.
 // e.g. could configure with 60second window, 100 requests max.
 export const auth = (d: D1Database) =>
@@ -12,15 +14,19 @@ export const auth = (d: D1Database) =>
       provider: "sqlite",
       schema: authSchema,
     }),
-    trustedOrigins: ['http://localhost:1420', 'https://kono.chat'],
+    trustedOrigins: ['http://localhost:1420', "http://localhost:8787", 'https://kono.chat'],
     basePath: "/auth",
     socialProviders: {
       google: {
         prompt: "select_account",
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        redirectUri: "https://localhost:1420/auth/callback/google" // TODO: This 
       },
     },
+    // plugins: [ 
+    //     openAPI(),
+    // ] 
   });
 
   // export const auth = betterAuth({
@@ -37,3 +43,9 @@ export const auth = (d: D1Database) =>
   //     },
   //   },
   // });
+
+
+// export type AuthType = {
+//     user: typeof auth.$Infer.Session.user | null
+//     session: typeof auth.$Infer.Session.session | null
+// }

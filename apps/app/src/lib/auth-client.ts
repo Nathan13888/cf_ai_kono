@@ -1,12 +1,15 @@
 //! For Better-Auth
 
 import { createAuthClient } from "better-auth/react";
+
 export const authClient = createAuthClient({
   // TODO: Inject from environment variables (different between dev and prod)
-  baseURL: "http://localhost:8787/auth",
+  baseURL: "http://localhost:8787",
+  basePath: "/auth",
 });
 
-// Usage
-// export const { signIn, signUp, useSession } = createAuthClient()
-
-// TODO: Use the authclient to login and stuff in the app
+export async function isAuthenticated(): Promise<boolean> {
+  return authClient.getSession().then((session) => {
+    return !!session.data;
+  })
+}

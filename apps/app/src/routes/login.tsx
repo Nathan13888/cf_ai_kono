@@ -1,24 +1,49 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
+import { authClient, isAuthenticated } from "@/lib/auth-client";
+import { type Static, Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
+import { FALLBACK_ROUTE } from "@/constant";
+
+const loginSearchSchema = Type.Object({
+  redirect: Type.Optional(Type.String()),
+});
+type LoginSearch = Static<typeof loginSearchSchema>;
+
 
 export const Route = createFileRoute("/login")({
-  loader: async () => {
-    const session = await authClient.getSession();
-    if (session) {
+  validateSearch: (search: Record<string, unknown>): LoginSearch => 
+    Value.Parse(loginSearchSchema, search),
+  beforeLoad: async ({ search }) => {
+    if (await isAuthenticated()) {
+      // Already logged in
+      console.log("Already logged in"); // TODO: Remove
+      // TODO: Add toast
       redirect({
-        to: "/chat",
+        to: search.redirect || FALLBACK_ROUTE,
         throw: true,
       });
+    } else {
+      console.log("Not logged in"); // TODO: Remove
     }
-  },
+  }, // TODO: add back
   component: RouteComponent,
 });
 
 // TODO: Style
 function RouteComponent() {
+  const { redirect: redirectParam } = Route.useSearch();
+
+  const handleSignIn = async () => {
+    console.log("Clicked sign in");
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: `http://localhost:1420/${redirectParam || FALLBACK_ROUTE}`, // TODO: Use env var and join path separators / properly
+    });
+  };
+
   return (
     <div className="flex items-center justify-center w-full h-full">
       <Card className="w-[350px]">
@@ -28,12 +53,7 @@ function RouteComponent() {
                 </CardHeader> */}
         <CardContent>
           <Button
-            onClick={async () => {
-              console.log("Clicked sign in");
-              await authClient.signIn.social({
-                provider: "google", // or any other provider id
-              });
-            }}
+            onClick={handleSignIn}
           >
             Sign in to Google
           </Button>

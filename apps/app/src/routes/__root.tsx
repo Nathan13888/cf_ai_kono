@@ -3,6 +3,7 @@ import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import "@/root.css";
+import { FALLBACK_ROUTE } from "@/constant";
 
 const queryClient = new QueryClient();
 
@@ -26,12 +27,12 @@ export const Route = createRootRoute({
   ),
   notFoundComponent: () => {
     // redirect({
-    //   to: "/chat",
+    //   to: FALLBACK_ROUTE,
     // });
     return (
       <div className="flex items-center justify-center w-full h-full">
         <h1 className="text-2xl font-bold text-gray-500">404 Not Found</h1>
-        <Link to="/chat">Go to chat</Link>
+        <Link to={FALLBACK_ROUTE}>Go to chat</Link>
       </div>
     );
   },

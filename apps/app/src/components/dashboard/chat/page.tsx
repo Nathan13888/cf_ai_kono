@@ -5,9 +5,12 @@
 import { Button } from "@/components/ui/button";
 import { useChatsStore } from "@/lib/chat/store";
 import { Menu, PenSquare } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Chat from "./chat";
 import ChatInput from "./input";
+import { ProfileButton } from "@/components/ui/profile-button";
+import { Link } from "@tanstack/react-router";
+import { authClient } from "@/lib/auth-client";
 
 // Constants for layout calculations to account for the padding values
 const TOP_PADDING = 48; // pt-12 (3rem = 48px)
@@ -17,6 +20,16 @@ const ADDITIONAL_OFFSET = 16; // Reduced offset for fine-tuning
 export interface ChatInterfaceProperties {}
 
 export default function ChatInference(props: ChatInterfaceProperties) {
+  // Check user status
+  const { 
+    data: session, 
+    isPending,
+    error,
+  } = authClient.useSession();
+  const isLoggedIn = useCallback(
+    () => session !== null && session !== undefined && !isPending && !error,
+    [session, isPending, error]);
+
   // Check if device is mobile and get viewport height
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useChatsStore((state) => state.isMobile);
@@ -75,27 +88,46 @@ export default function ChatInference(props: ChatInterfaceProperties) {
     >
       <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 bg-gray-50">
         <div className="flex items-center justify-between w-full px-2">
-          {/* Sidebar Menu */}
+          {/* Sidebar Menu (commented out for now) */}
+          {/*
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
             <Menu className="w-5 h-5 text-gray-700" />
             <span className="sr-only">Menu</span>
           </Button>
-
-          {/* Chat Title */}
-          <h1 className="text-base font-medium text-gray-800">
-            {conversationTitle ? conversationTitle : "New Chat"}
-          </h1>
+          */}
 
           {/* New Chat */}
           <Button
             variant="ghost"
             size="icon"
-            className="w-8 h-8 rounded-full"
+            className="w-8 h-8 rounded-full mr-2"
             onClick={(_) => newChat()}
           >
             <PenSquare className="w-5 h-5 text-gray-700" />
             <span className="sr-only">New Chat</span>
           </Button>
+
+          {/* Chat Title */}
+          <h1 className="flex-1 text-base font-medium text-gray-800 text-center">
+            {conversationTitle ? conversationTitle : "New Chat"}
+          </h1>
+          
+          {/* Right item */}
+          {
+            isLoggedIn ? (
+              <ProfileButton />
+            ) : (
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 rounded-full">
+                  <Link to="/login">
+                    Login
+                  </Link>
+              </Button>
+            )
+          }
         </div>
       </header>
 

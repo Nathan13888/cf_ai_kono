@@ -7,31 +7,25 @@ import { getOpenapi } from "@/routes/openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
 const app = route_app
-  .use(createLogger())
-  .use(
-    cors({
-      origin: ["http://localhost:1420", "https://kono.chat"],
-      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowHeaders: ["Authorization", "Content-Type"],
-      maxAge: 3600,
-    })
-  )
-  .get("/", (c) => {
-    const { logger } = c.var;
+// TODO: Integrate test code to anywhere vv
+// const app = route_app
+//   .use(createLogger())
+//   .get("/", (c) => {
+//     const { logger } = c.var;
 
-    const token = c.req.header("Authorization") ?? "";
-    logger.debug({ token });
+//     const token = c.req.header("Authorization") ?? "";
+//     logger.debug({ token });
 
-    // const user = getAuthorizedUser(token);
-    // logger.assign({ user });
+//     // const user = getAuthorizedUser(token);
+//     // logger.assign({ user });
 
-    // const posts = getPosts();
-    // logger.assign({ posts });
+//     // const posts = getPosts();
+//     // logger.assign({ posts });
 
-    logger.setResMessage("Get posts success"); // optional
+//     logger.setResMessage("Get posts success"); // optional
 
-    return c.text("Hello Hono!");
-  }); // TODO: Remove
+//     return c.text("Hello Hono!");
+//   }); // TODO: Remove
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {
