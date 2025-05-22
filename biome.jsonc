@@ -2,7 +2,11 @@
     "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
     "files": {
         "include": ["apps/**/*", "packages/**/*"],
-        "ignore": ["apps/app/**/*", "**/worker-configuration.d.ts"]
+        "ignore": [
+            "apps/app/**/*",
+            "**/worker-configuration.d.ts",
+            "**/.wrangler/**/*"
+        ]
     },
     "organizeImports": {
         "enabled": true
@@ -18,7 +22,7 @@
     },
     "javascript": {
         "formatter": {
-            "quoteStyle": "single"
+            "quoteStyle": "double"
         }
     },
     "css": {
