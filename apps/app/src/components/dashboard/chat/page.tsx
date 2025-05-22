@@ -4,7 +4,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useChatsStore } from "@/lib/chat/store";
-import { Menu, PenSquare } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 import Chat from "./chat";
 import ChatInput from "./input";
@@ -12,14 +12,12 @@ import { ProfileButton } from "@/components/ui/profile-button";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 
-// Constants for layout calculations to account for the padding values
-const TOP_PADDING = 48; // pt-12 (3rem = 48px)
-const BOTTOM_PADDING = 128; // pb-32 (8rem = 128px)
-const ADDITIONAL_OFFSET = 16; // Reduced offset for fine-tuning
+// // Constants for layout calculations to account for the padding values
+// const TOP_PADDING = 48; // pt-12 (3rem = 48px)
+// const BOTTOM_PADDING = 128; // pb-32 (8rem = 128px)
+// const ADDITIONAL_OFFSET = 16; // Reduced offset for fine-tuning
 
-export interface ChatInterfaceProperties {}
-
-export default function ChatInference(props: ChatInterfaceProperties) {
+export default function ChatInference() {
   // Check user status
   const { 
     data: session, 
@@ -69,11 +67,11 @@ export default function ChatInference(props: ChatInterfaceProperties) {
   }, [isMobile, viewportHeight]);
 
   // Calculate available content height (viewport minus header and input)
-  // TODO: impl?
-  const getContentHeight = () => {
-    // Calculate available height by subtracting the top and bottom padding from viewport height
-    return viewportHeight - TOP_PADDING - BOTTOM_PADDING - ADDITIONAL_OFFSET;
-  };
+  // TODO: impl? idk what it's for Nathan?
+  // const getContentHeight = () => {
+  //   // Calculate available height by subtracting the top and bottom padding from viewport height
+  //   return viewportHeight - TOP_PADDING - BOTTOM_PADDING - ADDITIONAL_OFFSET;
+  // };
 
   const conversationTitle = useChatsStore(
     (state) => state.currentConversation?.title

@@ -19,7 +19,6 @@ import { client } from "@/lib/client";
 import {
   AVAILABLE_MODELS,
   type Model,
-  type ModelCreator,
   type ModelId,
   ModelStatus,
 } from "@/lib/constants";
@@ -668,21 +667,21 @@ const GetIconFromPath = (color: string, path: string, size: number) => {
   );
 };
 
-const formatCreatorName = (creator: ModelCreator) => {
-  switch (creator) {
-    case "google":
-      return "Google";
-    case "anthropic":
-      return "Anthropic";
-    case "openai":
-      return "OpenAI";
-    case "meta":
-      return "Meta";
-    case "deepseek":
-      return "DeepSeek";
-    case "alibaba":
-      return "Alibaba";
-    default:
-      return creator;
-  }
-};
+// const formatCreatorName = (creator: ModelCreator) => {
+//   switch (creator) {
+//     case "google":
+//       return "Google";
+//     case "anthropic":
+//       return "Anthropic";
+//     case "openai":
+//       return "OpenAI";
+//     case "meta":
+//       return "Meta";
+//     case "deepseek":
+//       return "DeepSeek";
+//     case "alibaba":
+//       return "Alibaba";
+//     default:
+//       return creator;
+//   }
+// };

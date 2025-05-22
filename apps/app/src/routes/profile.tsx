@@ -7,7 +7,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function RouteComponent() {
-  const { data: session, isPending, error, refetch } = authClient.useSession();
+  const { data: session, isPending, error } = authClient.useSession();
   if (isPending) {
     return <div>Loading...</div>;
   }

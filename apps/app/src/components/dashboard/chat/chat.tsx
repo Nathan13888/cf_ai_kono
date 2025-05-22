@@ -2,9 +2,8 @@ import MessageRenderer from "@/components/ui/chat-renderer";
 import { useChatsStore } from "@/lib/chat/store";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import { Copy, Loader, RefreshCcw, Share2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function Chat({ className }: { className?: string }) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -232,22 +231,21 @@ const renderMessage = (message: Message, StreamContent: React.FC) => {
   );
 };
 
-//
-const timeAgoString = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const [timeAgo, setTimeAgo] = useState("");
+// const timeAgoString = (timestamp: number) => {
+//   const date = new Date(timestamp);
+//   const [timeAgo, setTimeAgo] = useState("");
 
-  useEffect(() => {
-    const updateTimeAgo = () => {
-      setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
-    };
+//   useEffect(() => {
+//     const updateTimeAgo = () => {
+//       setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
+//     };
 
-    // Initial update
-    updateTimeAgo();
+//     // Initial update
+//     updateTimeAgo();
 
-    const intervalId = setInterval(updateTimeAgo, 1000); // Update every 1 second
-    return () => clearInterval(intervalId);
-  }, []);
+//     const intervalId = setInterval(updateTimeAgo, 1000); // Update every 1 second
+//     return () => clearInterval(intervalId);
+//   }, []);
 
-  return <span>{timeAgo}</span>;
-};
+//   return <span>{timeAgo}</span>;
+// };
