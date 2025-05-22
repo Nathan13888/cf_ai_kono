@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as WelcomeImport } from './routes/welcome'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as LogoutImport } from './routes/logout'
@@ -19,6 +20,12 @@ import { Route as ChatImport } from './routes/chat'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const WelcomeRoute = WelcomeImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SettingsRoute = SettingsImport.update({
   id: '/settings',
@@ -102,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsImport
       parentRoute: typeof rootRoute
     }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -114,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/welcome': typeof WelcomeRoute
 }
 
 export interface FileRoutesByTo {
@@ -123,6 +138,7 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/welcome': typeof WelcomeRoute
 }
 
 export interface FileRoutesById {
@@ -133,13 +149,28 @@ export interface FileRoutesById {
   '/logout': typeof LogoutRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/welcome': typeof WelcomeRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/login' | '/logout' | '/profile' | '/settings'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/login'
+    | '/logout'
+    | '/profile'
+    | '/settings'
+    | '/welcome'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/login' | '/logout' | '/profile' | '/settings'
+  to:
+    | '/'
+    | '/chat'
+    | '/login'
+    | '/logout'
+    | '/profile'
+    | '/settings'
+    | '/welcome'
   id:
     | '__root__'
     | '/'
@@ -148,6 +179,7 @@ export interface FileRouteTypes {
     | '/logout'
     | '/profile'
     | '/settings'
+    | '/welcome'
   fileRoutesById: FileRoutesById
 }
 
@@ -158,6 +190,7 @@ export interface RootRouteChildren {
   LogoutRoute: typeof LogoutRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  WelcomeRoute: typeof WelcomeRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -167,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogoutRoute: LogoutRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  WelcomeRoute: WelcomeRoute,
 }
 
 export const routeTree = rootRoute
@@ -184,7 +218,8 @@ export const routeTree = rootRoute
         "/login",
         "/logout",
         "/profile",
-        "/settings"
+        "/settings",
+        "/welcome"
       ]
     },
     "/": {
@@ -204,6 +239,9 @@ export const routeTree = rootRoute
     },
     "/settings": {
       "filePath": "settings.tsx"
+    },
+    "/welcome": {
+      "filePath": "welcome.tsx"
     }
   }
 }

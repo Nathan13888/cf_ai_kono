@@ -14,7 +14,7 @@ type LoginSearch = Static<typeof loginSearchSchema>;
 
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): LoginSearch => 
+  validateSearch: (search: Record<string, unknown>): LoginSearch =>
     Value.Parse(loginSearchSchema, search),
   beforeLoad: async ({ search }) => {
     if (await isAuthenticated()) {
@@ -41,6 +41,25 @@ function RouteComponent() {
     await authClient.signIn.social({
       provider: "google",
       callbackURL: `http://localhost:1420/${redirectParam || FALLBACK_ROUTE}`, // TODO: Use env var and join path separators / properly
+      // /**
+      //  * A URL to redirect if an error occurs during the sign in process
+      //  */
+      // errorCallbackURL: "http://localhost:1420/error",
+      /**
+       * A URL to redirect if the user is newly registered
+       */
+      newUserCallbackURL: "http://localhost:1420/welcome",
+    }, {
+      // onRequest: (ctx) => {
+      //   //show loading
+      // },
+      // onSuccess: (ctx) => {
+      //   //redirect to the dashboard or sign in page
+      // },
+      onError: (ctx) => {
+        // TODO: Change to a toast
+        alert(ctx.error.message);
+      },
     });
   };
 

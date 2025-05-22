@@ -17,6 +17,7 @@ export const auth = (d: D1Database) =>
     trustedOrigins: ['http://localhost:1420', "http://localhost:8787", 'https://kono.chat'],
     basePath: "/auth",
     socialProviders: {
+      // Note: if we ever support other authentication methods (i.e. not just one method), we should implement link social
       google: {
         prompt: "select_account",
         clientId: process.env.GOOGLE_CLIENT_ID,

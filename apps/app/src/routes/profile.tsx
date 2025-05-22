@@ -23,6 +23,15 @@ function RouteComponent() {
     });
   }
 
+  // // To list user accounts you can use client.user.listAccounts method. Which will return all accounts associated with a user.
+  // const accounts = await authClient.listAccounts();
+
+  // TODO: Implement editing profile info
+  // Example:
+  // await authClient.updateUser({
+  //     image: "https://example.com/image.jpg",
+  //     name: "John Doe",
+  // })
   // TODO: Style
   // User is logged in
   return (
@@ -41,3 +50,7 @@ function RouteComponent() {
     </div>
   );
 }
+
+// TODO: look at ChatGPT, Claude, t3.chat profile/setting pages for inspiration
+// TODO: Support bulk deleting chats.
+// TODO: Consider allow user to delete their account outright (might be dangerous and is non-recoverable). To cheat, cold just have a extra column in user table: https://www.better-auth.com/docs/concepts/users-accounts#delete-user
