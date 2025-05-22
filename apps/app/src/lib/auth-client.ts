@@ -30,3 +30,22 @@ export async function checkAuthenticated(location: ParsedLocation): Promise<void
     })
   }
 }
+
+/**
+ * Logout user and redirect to login page
+ */
+export async function logout(withToast = false) {
+  return authClient.signOut({
+    fetchOptions: {
+      onSuccess: () => {
+        if (withToast) {
+          // TODO: Add toast
+        }
+        redirect({
+          to: "/login",
+          throw: true,
+        })
+      },
+    },
+  })
+}

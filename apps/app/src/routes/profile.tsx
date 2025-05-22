@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { authClient, checkAuthenticated } from "@/lib/auth-client";
+import { authClient, checkAuthenticated, logout } from "@/lib/auth-client";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/profile")({
@@ -41,10 +41,7 @@ function RouteComponent() {
       <p>{session?.user?.email}</p>
       <pre>{JSON.stringify(session, null, 2)}</pre>
       <Button
-        onClick={async () => {
-          console.log("Clicked sign out");
-          await authClient.signOut();
-        }}
+        onClick={async () => logout}
       >
         Sign out
       </Button>
