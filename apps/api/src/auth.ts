@@ -4,6 +4,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 // import { openAPI } from "better-auth/plugins"
 
 import * as authSchema from "@/db/auth-schema";
+import { createMiddleware } from "hono/factory";
+import type { Bindings } from "./bindings";
 
 // TODO: Fetch D1 database from env instead of bindings
 // TODO: Use rate limiting with cloudflare because better auth.
@@ -49,7 +51,28 @@ export const auth = (d: D1Database) =>
 //   },
 // });
 
-// export type AuthType = {
-//     user: typeof auth.$Infer.Session.user | null
-//     session: typeof auth.$Infer.Session.session | null
-// }
+// Helper type to extract session return type
+type SessionType = Awaited<ReturnType<ReturnType<typeof auth>["api"]["getSession"]>>;
+type Session = NonNullable<SessionType>['session'];
+type User = NonNullable<SessionType>['user'];
+export type AuthType = {
+    user: User | null;
+    session: Session | null;
+};
+
+export const authMiddleware = createMiddleware<{
+    Bindings: Bindings;
+    Variables: AuthType;
+}>(async (c, next) => {
+	const session = await auth(c.env.DB).api.getSession({ headers: c.req.raw.headers });
+ 
+  	if (!session) {
+    	c.set("user", null);
+    	c.set("session", null);
+    	return next();
+  	}
+ 
+  	c.set("user", session.user);
+  	c.set("session", session.session);
+  	return next();
+});

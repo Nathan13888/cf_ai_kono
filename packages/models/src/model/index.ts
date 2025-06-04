@@ -235,6 +235,10 @@ export const modelSchema = Type.Object({
     status: modelStatusSchema,
 });
 export type Model = Static<typeof modelSchema>;
+
+export const modelsSchema = Type.Array(modelSchema, { default: [] });
+export type Models = Static<typeof modelsSchema>;
+
 export const DEFAULT_MODEL = "gemini-2.5-flash-preview-05-20" as ModelId;
 
 export * from "./pricing";

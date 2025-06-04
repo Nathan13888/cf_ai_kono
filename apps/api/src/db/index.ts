@@ -1,20 +1,20 @@
 import { type DrizzleD1Database, drizzle } from "drizzle-orm/d1";
 import { createMiddleware } from "hono/factory";
+import * as schema from "./schema";
+import type { Bindings } from "@/bindings";
 
-interface DbBindings {
-    db: DrizzleD1Database<Record<string, never>> & {
+export interface DbBindings {
+    db: DrizzleD1Database<typeof schema> & {
         $client: D1Database;
     };
 }
 
-// export const db = await drizzle(c.env.DB);
-
 export const getDb = (d: D1Database) => {
-    return drizzle(d);
+    return drizzle(d, { schema });
 };
 
 export const dbMiddleware = createMiddleware<{
-    Bindings: CloudflareBindings;
+    Bindings: Bindings;
     Variables: DbBindings;
 }>(async (c, next) => {
     const db = await getDb(c.env.DB);

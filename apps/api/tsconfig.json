@@ -5,6 +5,12 @@
         "moduleResolution": "Bundler",
         "strict": true,
         "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noUncheckedIndexedAccess": true,
         "lib": ["ESNext"],
         "paths": {
             "@/*": ["./src/*"]

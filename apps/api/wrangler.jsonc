@@ -2,7 +2,7 @@
     "$schema": "../../node_modules/wrangler/config-schema.json",
     "name": "kono-api",
     "main": "src/index.ts",
-    "compatibility_date": "2025-05-11",
+    "compatibility_date": "2025-05-08",
     "compatibility_flags": ["nodejs_compat"],
     // "vars": {
     //   "MY_VAR": "my-variable"
@@ -26,12 +26,33 @@
             "database_id": "33308e47-5118-41fc-a0eb-d7acdde82d00",
             "migrations_dir": "drizzle/migrations"
         }
-    ]
+    ],
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "CHAT_DURABLE_OBJECT",
+                "class_name": "ChatDurableObject",
+            }
+        ]
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes":  ["ChatDurableObject"]
+        },
+    ],
+    "rules": [
+        {
+            "type": "Text",
+            "globs": ["**/*.sql"],
+            "fallthrough": true,
+        },
+    ],
     // "ai": {
     //   "binding": "AI"
     // },
-    // "observability": {
-    //   "enabled": true,
+    "observability": {
+      "enabled": true,
     //   "head_sampling_rate": 1
-    // }
+    }
 }

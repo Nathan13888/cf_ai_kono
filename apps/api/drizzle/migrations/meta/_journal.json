@@ -1,13 +1,13 @@
 {
-    "version": "7",
-    "dialect": "sqlite",
-    "entries": [
-        {
-            "idx": 0,
-            "version": "6",
-            "when": 1747811670057,
-            "tag": "0000_nervous_the_anarchist",
-            "breakpoints": true
-        }
-    ]
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1748377242559,
+      "tag": "0000_busy_toro",
+      "breakpoints": true
+    }
+  ]
 }

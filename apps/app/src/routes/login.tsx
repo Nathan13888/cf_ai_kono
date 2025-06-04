@@ -12,23 +12,17 @@ const loginSearchSchema = Type.Object({
 });
 type LoginSearch = Static<typeof loginSearchSchema>;
 
-
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): LoginSearch =>
+  validateSearch: (search): LoginSearch =>
     Value.Parse(loginSearchSchema, search),
   beforeLoad: async ({ search }) => {
     if (await isAuthenticated()) {
-      // Already logged in
-      console.log("Already logged in"); // TODO: Remove
-      // TODO: Add toast
       redirect({
         to: search.redirect || FALLBACK_ROUTE,
         throw: true,
       });
-    } else {
-      console.log("Not logged in"); // TODO: Remove
     }
-  }, // TODO: add back
+  },
   component: RouteComponent,
 });
 

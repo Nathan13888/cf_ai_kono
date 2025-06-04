@@ -1,178 +1,283 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
-import { openai } from "@ai-sdk/openai";
-import { MODELS, type Model, type ModelId, modelIdSchema } from "@kono/models";
+import { v7 as uuidv7 } from "uuid";
 import { Type } from "@sinclair/typebox";
-import { type LanguageModel, streamText } from "ai";
+// import { type CoreUserMessage, streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
-import { streamText as stream } from "hono/streaming";
-import { ollama } from "ollama-ai-provider";
+// import { streamText as stream } from "hono/streaming";
+import { type Chat, type ChatMetadata, chatMetadataSchema, chatSchema, type Message, type ModelId, modelIdSchema, newUserMessageSchema } from "@kono/models";
+import type { DbBindings } from "@/db";
+import type { AuthType } from "@/auth";
+import { chats, messages } from "@/db/schema";
+import { Value } from "@sinclair/typebox/value";
+import type { Bindings } from "@/bindings";
 
-/**
- * Convert a model ID to a LanguageModel instance.
- * @param modelId - The model ID to convert
- * @returns [LanguageModel] if model ID is valid, otherwise undefined
- */
-function modelIdToLM(modelId: ModelId): LanguageModel | undefined {
-    // Get model entry
-    const model: Omit<Model, "id"> | undefined = Object.entries(MODELS).find(
-        ([id]) => id === modelId,
-    )?.[1];
-    if (!model) {
-        return undefined;
-    }
+const newChatRequestSchema = newUserMessageSchema;
 
-    switch (model.provider) {
-        case "ollama":
-            return ollama(modelId); // TODO: Make the API key to a URL by env variable to support remote servers
-        case "google-generative-ai":
-            return google(modelId);
-        case "openai":
-            return openai(modelId);
-        case "anthropic":
-            return anthropic(modelId);
-        default:
-            // TODO: How to do exhaustive check?
-            return undefined;
-    }
-}
-
-const chatRequestSchema = Type.Object({
-    messages: Type.Array(
-        Type.Object({
-            role: Type.Union([
-                Type.Literal("user"),
-                Type.Literal("assistant"),
-                Type.Literal("system"),
-            ]),
-            content: Type.String(),
-        }),
-    ), // TODO: Make this a bigger subset to match AI SDK capabilities
-});
-
-const chatQuerySchema = Type.Object({
-    modelId: modelIdSchema, // TODO: Add more models later
-    // temperature: Type.Optional(Type.Number()),
-    // top_p: Type.Optional(Type.Number()),
-    // max_tokens: Type.Optional(Type.Number()),
-    // stop: Type.Optional(Type.String()),
-    // stream: Type.Optional(Type.Boolean()),
-    // presence_penalty: Type.Optional(Type.Number()),
-    // frequency_penalty: Type.Optional(Type.Number()),
-    // logit_bias: Type.Optional(Type.String()),
-    // user: Type.Optional(Type.String()),
-    // n: Type.Optional(Type.Number()),
-});
-// .openapi({
-//   ref: "Query",
-//   description: "Query parameters for the chat endpoint",
-//   example: {
-//     model: "qwen3:1.7b",
-//   },
+// const chatQuerySchema = Type.Object({
+//     modelId: modelIdSchema,
+//     // temperature: Type.Optional(Type.Number()),
+//     // top_p: Type.Optional(Type.Number()),
+//     // max_tokens: Type.Optional(Type.Number()),
+//     // stop: Type.Optional(Type.String()),
+//     // stream: Type.Optional(Type.Boolean()),
+//     // presence_penalty: Type.Optional(Type.Number()),
+//     // frequency_penalty: Type.Optional(Type.Number()),
+//     // logit_bias: Type.Optional(Type.String()),
+//     // user: Type.Optional(Type.String()),
+//     // n: Type.Optional(Type.Number()),
 // });
 
-const chatResponseSchema = Type.String();
+const newChatResponseSchema = chatSchema;
+const chatResponseSchema = chatMetadataSchema;
 
-const app = new Hono().post(
-    "/",
-    describeRoute({
-        summary: "Chat test",
-        description: "Chat test",
-        // parameters:
-        requestBody: {
-            description: "LLM messages",
-            content: {
-                "application/json": {
-                    schema: chatRequestSchema,
-                },
-            },
-            required: true,
-        },
-        // validateResponse: true,
-        responses: {
-            200: {
-                description: "LLM Output",
-                content: {
-                    "text/plain": {
-                        schema: resolver(chatResponseSchema),
-                    },
-                },
-            },
-            400: {
-                description: "Bad Request",
+const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
+    .post(
+        "/",
+        describeRoute({
+            summary: "Create a new chat",
+            // description: ,
+            // parameters:
+            requestBody: {
+                description: "New chat request",
                 content: {
                     "application/json": {
-                        schema: Type.Object({
-                            error: Type.String(),
-                        }),
+                        schema: newChatRequestSchema,
+                    },
+                },
+                required: true,
+            },
+            // validateResponse: true,
+            responses: {
+                200: {
+                    description: "Chat created",
+                    content: {
+                        "text/plain": {
+                            schema: resolver(newChatResponseSchema),
+                        },
+                    },
+                },
+                400: {
+                    description: "Bad Request",
+                    content: {
+                        "application/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
+                    },
+                },
+                401: {
+                    description: "Unauthorized",
+                }
+            },
+        }),
+        validator("json", newChatRequestSchema),
+        async (c) => {
+            // Check if user is authenticated
+            const user = c.get("user");
+            if (!user) {
+                return c.json(
+                    {
+                        error: "Unauthorized",
+                    },
+                    401,
+                );
+            }
+
+            const body = c.req.valid("json");
+            const { content, modelId } = body;
+
+            const db = c.get("db");
+
+            // Store new message in DB
+            const tx = db; // TODO: Use an actual transaction via Cloudflare DO instead
+            const [newChat] = await tx.insert(chats)
+                .values({
+                    id: uuidv7(),
+                    title: undefined,
+                    creatorId: user.id,
+                    createdAt: new Date(),
+                    lastUpdatedAt: new Date(),
+                }).returning();
+            if (!newChat) {
+                throw new Error("Failed to create new chat for some reason");
+            }
+            await tx.insert(messages)
+                .values({
+                    id: uuidv7(),
+                    status: "ungenerated",
+                    generationTime: undefined,
+                    role: "user",
+                    content: content,
+                    timestamp: new Date(),
+                    modelId: modelId,
+                    parentId: null,
+                    chatId: newChat.id,
+                });
+
+            // Re-query to get the complete chat and its messages separately
+            const chatData = await db.query.chats.findFirst({
+                where: (chats, { eq }) => eq(chats.id, newChat.id),
+            });
+
+            if (!chatData) {
+                throw new Error("Failed to fetch created chat");
+            }
+
+            const chatMessages = await db.query.messages.findMany({
+                where: (messages, { eq }) => eq(messages.chatId, newChat.id),
+            });
+
+            const chat: Chat = {
+                id: chatData.id,
+                title: chatData.title ?? undefined,
+                creatorId: chatData.creatorId,
+                createdAt: chatData.createdAt,
+                lastUpdatedAt: chatData.lastUpdatedAt,
+                messages: chatMessages.map(
+                    (msg): Message => ({
+                        id: msg.id,
+                        status: msg.status,
+                        generationTime: msg.generationTime,
+                        role: msg.role,
+                        content: msg.content,
+                        timestamp: msg.timestamp,
+                        modelId: Value.Parse(modelIdSchema, msg.modelId),
+                        parentId: msg.parentId ?? undefined,
+                        chatId: msg.chatId,
+                    })
+                ),
+            };
+
+            return c.json(chat);
+
+            //     // system: "", // TODO: Make system prompt configurable
+            //     messages: [
+            //         newUserMessage
+            //     ],
+            // });
+            // const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
+
+            // c.header("Content-Encoding", "Identity");
+            // return stream(
+            //     c,
+            //     async (stream) => {
+            //         const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
+            //         for await (const textPart of textStream) {
+            //             message.push(textPart);
+            //             // console.log("message:", message);
+            //             await stream.write(textPart);
+            //         }
+
+            //         // TODO: Write completed message
+            //         // /// Write a text with a new line ('\n').
+            //         // await stream.writeln("Hello");
+            //         // // Wait 1 second.
+            //         // await stream.sleep(5000);
+            //         // // Write a text without a new line.
+            //         // await stream.write(`Hosdfno.`);
+            //     },
+            //     async (err, stream) => {
+            //         stream.writeln("An error occurred!");
+            //         console.error(err); // TODO: Write error to message
+            //     },
+            // );
+            // // TODO: Clean up properly if either client or model API drops
+        },
+    )
+    .get(
+        "/:id",
+        describeRoute({
+            summary: "Fetch chat metadata by ID",
+            // description: ,
+            // parameters:
+            // validateResponse: true,
+            responses: {
+                200: {
+                    description: "Chat metadata fetched",
+                    content: {
+                        "text/plain": {
+                            schema: resolver(chatResponseSchema),
+                        },
+                    },
+                },
+                401: {
+                    description: "Unauthorized",
+                },
+                404: {
+                    description: "Chat not found",
+                    content: {
+                        "application/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
                     },
                 },
             },
-        },
-    }),
-    validator("query", chatQuerySchema),
-    validator("json", chatRequestSchema),
-    async (c) => {
-        const query = c.req.valid("query");
-        const body = c.req.valid("json");
-        console.log("query", query); // TODO
-        console.log("body", body); // TODO
-        const model = modelIdToLM(query.modelId);
+        }),
+        async (c) => {
+            // Check if user is authenticated
+            const user = c.get("user");
+            if (!user) {
+                return c.json(
+                    {
+                        error: "Unauthorized",
+                    },
+                    401,
+                );
+            }
+            const { id: chatId } = c.req.param();
 
-        if (!model) {
-            return c.json(
-                {
-                    error: `Model ${query.modelId} not found`,
-                },
-                400,
-            );
+            const db = c.get("db");
+
+            const chat: ChatMetadata | undefined = chatId.length > 0
+                ? await db
+                    .query.chats.findFirst({
+                        where: (chats, { eq }) => eq(chats.id, chatId),
+                    }).then((r) => (
+                        r ? ({
+                            id: r.id,
+                            title: r.title ?? undefined,
+                            creatorId: r.creatorId,
+                            createdAt: r.createdAt,
+                            lastUpdatedAt: r.lastUpdatedAt,
+                        }) : undefined
+                    ))
+                : undefined;
+            if (!chat) {
+                return c.json(
+                    {
+                        error: "Chat not found",
+                    },
+                    404,
+                )
+            }
+
+            // const messages: Message[] = await db
+            //     .query.messages.findMany({
+            //         where: (messages, { eq }) => eq(messages.chatId, chatId),
+            //     }).then((msgs) => msgs.map(
+            //         (msg): Message => ({
+            //             id: msg.id,
+            //             status: msg.status,
+            //             generationTime: msg.generationTime,
+            //             role: msg.role,
+            //             content: msg.content,
+            //             timestamp: msg.timestamp,
+            //             modelId: Value.Parse(modelIdSchema, msg.modelId),
+            //             parentId: msg.parentId ?? undefined,
+            //             chatId: msg.chatId,
+            //         })
+            //     ));
+            // const response: Chat = {
+            //     ...chat,
+            //     messages: messages
+            // };
+
+            return c.json(chat);
         }
-
-        const result = await streamText({
-            model: model,
-            // system: "", // TODO: Make system prompt configurable
-            messages: body.messages,
-        });
-        const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
-
-        c.header("Content-Encoding", "Identity");
-        return stream(
-            c,
-            async (stream) => {
-                const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
-                for await (const textPart of textStream) {
-                    message.push(textPart);
-                    // console.log("message:", message);
-                    await stream.write(textPart);
-                }
-                // /// Write a text with a new line ('\n').
-                // await stream.writeln("Hello");
-                // // Wait 1 second.
-                // await stream.sleep(5000);
-                // // Write a text without a new line.
-                // await stream.write(`Hosdfno.`);
-            },
-            async (err, stream) => {
-                stream.writeln("An error occurred!");
-                console.error(err);
-            },
-        );
-        // TODO: Clean up properly if either client or model API drops
-
-        // return streamSSE(c, async (stream) => {
-        //   while (true) {
-        //     const message = `It is ${new Date().toISOString()}`;
-        //     await stream.writeSSE({
-        //       data: message,
-        //       event: "time-update",
-        //       id: String(id++),
-        //     });
-        //     await stream.sleep(1000);
-        //   }
-        // });
-    },
-);
+    );
 
 export default app;

@@ -11,11 +11,8 @@ import {
 import { useChatsStore } from "@/lib/chat/store";
 import type {
   ActiveButton,
-  Chunk,
-  MessageType,
-  Section,
 } from "@/lib/chat/types";
-import { client } from "@/lib/client";
+// import { client } from "@/lib/client";
 import {
   AVAILABLE_MODELS,
   type Model,
@@ -23,9 +20,9 @@ import {
   ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+// import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
 import {
   siAlibabadotcom,
   siAnthropic,
@@ -33,209 +30,223 @@ import {
   siMeta,
   siOpenai,
 } from "simple-icons";
+// import { Message } from "@kono/models";
+import { formatChatInput } from "@/lib/chat";
 
-export default function ChatInput() {
-  const id = useChatsStore((state) => state.currentConversation?.id);
-  const newChat = useChatsStore((state) => state.newChat);
+interface ChatInputProps {
+  value: string;
+  setValue: (input: string) => void;
+  placeholder: string;
+  /**
+   * What to do on submit. Should hold until input is submitted.
+   * @param input Input value
+   * @returns Whether input was submitted successfully
+   */
+  onSubmit: (input: string) => Promise<boolean>;
+  disabled: boolean;
+}
 
+export function ChatInput({
+  value,
+  setValue,
+  placeholder,
+  onSubmit,
+  disabled = false,
+}: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
 
-  const [inputValue, setInputValue] = useState("");
-  const [hasTyped, setHasTyped] = useState(false);
   const activeButton = useChatsStore((state) => state.activeButton);
   const setActiveButton = useChatsStore((state) => state.setActiveButton);
-
   const currentModel = useChatsStore((state) => state.currentModel);
   const setCurrentModel = useChatsStore((state) => state.setCurrentModel);
-  const isStreaming = useChatsStore((state) => state.isStreaming);
-  const streamBuffer = useChatsStore((state) => state.streamBuffer);
-  const setStreaming = useChatsStore((state) => state.setStreaming);
-  const isMobile = useChatsStore((state) => state.isMobile);
-  const currentSections = useChatsStore(
-    (state) => state.currentConversation?.sections
-  );
-  const addSection = useChatsStore((state) => state.addSection);
-  const setSection = useChatsStore((state) => state.setSection);
 
-  // Mount new chat on first load
-  useEffect(() => {
-    if (!id) {
-      newChat();
-      console.log("New chat created:", id);
-    }
-  }, [id, newChat]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch chat conversation on id change
+  // const streamBuffer = useChatsStore((state) => state.streamBuffer);
+  // const setStreaming = useChatsStore((state) => state.setStreaming);
+  // const isMobile = useChatsStore((state) => state.isMobile);
+  // const currentSections = useChatsStore(
+  //   (state) => state.currentChat?.sections
+  // );
+  // const addSection = useChatsStore((state) => state.addSection);
+  // const setSection = useChatsStore((state) => state.setSection);
 
-  // Mutate chat conversation by posting response
-  // TODO: refactor some logic??
-  const queryClient = useQueryClient();
-  const sendPrompt = useMutation({
-    // TODO: support different types of user input
-    // TODO: include "target" last message to reconciliate with cloud-client state discrepancies
-    mutationFn: async (userMessage: string) => {
-      if (!id) {
-        throw new Error("Conversation ID is not defined");
-      }
+  // TODO: vv copy anything useful away from this
+  // // Mutate chat chat by posting response
+  // const queryClient = useQueryClient();
+  // const sendPrompt = useMutation({
+  //   // TODO: support different types of user input
+  //   // TODO: include "target" last message to reconciliate with cloud-client state discrepancies
+  //   mutationFn: async (userMessage: string) => {
+  //     // Initialize message of user
+  //     const userMessageObj = {
+  //       id: crypto.randomUUID(),
+  //       thinking: null,
+  //       messages: [
+  //         {
+  //           id: crypto.randomUUID(),
+  //           content: userMessage,
+  //           type: "user",
+  //           completed: true,
+  //         },
+  //       ],
+  //       generationTime: null,
+  //       createdAt: Date.now(),
+  //       isStreaming: false,
+  //     } satisfies Section;
+  //     addSection(id, userMessageObj);
 
-      // Initialize message of user
-      const userMessageObj = {
-        id: crypto.randomUUID(),
-        thinking: null,
-        messages: [
-          {
-            id: crypto.randomUUID(),
-            content: userMessage,
-            type: "user",
-            completed: true,
-          },
-        ],
-        generationTime: null,
-        createdAt: Date.now(),
-        isRendering: false,
-      } satisfies Section;
-      addSection(id, userMessageObj);
+  //     // Prepare stream from server
+  //     const responseSectionId = crypto.randomUUID(); // response from agent
+  //     const messageId = crypto.randomUUID(); // message in response
+  //     addSection(id, {
+  //       id: responseSectionId,
+  //       thinking: null,
+  //       messages: [
+  //         {
+  //           id: messageId,
+  //           content: null,
+  //           type: "assistant",
+  //           completed: null, // TODO: null or false?
+  //         },
+  //       ], // no messages to indicate rendering
+  //       generationTime: null,
+  //       createdAt: Date.now(),
+  //       isStreaming: false, // TODO: yeet dis shit
+  //     } satisfies Section);
 
-      // Prepare stream from server
-      const responseSectionId = crypto.randomUUID(); // response from agent
-      const messageId = crypto.randomUUID(); // message in response
-      addSection(id, {
-        id: responseSectionId,
-        thinking: null,
-        messages: [
-          {
-            id: messageId,
-            content: null,
-            type: "assistant",
-            completed: null, // TODO: null or false?
-          },
-        ], // no messages to indicate rendering
-        generationTime: null,
-        createdAt: Date.now(),
-        isRendering: false, // TODO: yeet dis shit
-      } satisfies Section);
+  //     setStreaming({
+  //       messageId,
+  //     });
 
-      setStreaming({
-        messageId,
-      });
+  //     // Hit chat endpoint
+  //     // Prepare request
+  //     const messages: Message[] =
+  //       currentSections?.flatMap(
+  //         (section): Message[] =>
+  //           section.messages
+  //             .map((message) => {
+  //               if (message?.content) {
+  //                 let content = "";
+  //                 if (typeof message.content === "string") {
+  //                   content = message.content;
+  //                 } else if (Array.isArray(message.content)) {
+  //                   content = message.content
+  //                     .map((chunk: Chunk) => chunk.text)
+  //                     .join("");
+  //                 }
+  //                 return {
+  //                   id: crypto.randomUUID() as string,
+  //                   inProgress: false,
+  //                   role: message.type,
+  //                   content: content,
+  //                   parentId: undefined, // TODO: this is wrong
+  //                   timestamp: Date.now(),
+  //                   modelId: currentModel,
+  //                 };
+  //               }
 
-      // Hit chat endpoint
-      // Prepare request
-      const messages =
-        currentSections?.flatMap(
-          (section) =>
-            section.messages
-              .map((message) => {
-                if (message?.content) {
-                  let content = "";
-                  if (typeof message.content === "string") {
-                    content = message.content;
-                  } else if (Array.isArray(message.content)) {
-                    content = message.content
-                      .map((chunk: Chunk) => chunk.text)
-                      .join("");
-                  }
-                  return {
-                    role: message.type,
-                    content: content,
-                  };
-                }
+  //               return undefined;
+  //             })
+  //             .filter((i) => i !== undefined) // Filter out undefined values
+  //       ) ?? [];
+  //     messages.push({
+  //       id: crypto.randomUUID() as string,
+  //       inProgress: false,
+  //       role: "user" as MessageType,
+  //       content: userMessage,
+  //       parentId: undefined, // TODO: this is wrong
+  //       timestamp: Date.now(),
+  //       modelId: currentModel,
+  //     });
+  //     console.log("Sending messages:", messages);
+  //     const response = await client.chat.$post({
+  //       query: {
+  //         modelId: currentModel,
+  //       },
+  //       json: {
+  //         messages: messages,
+  //       },
+  //     });
+  //     // Process stream
+  //     const reader = response.body?.getReader();
+  //     const decoder = new TextDecoder();
+  //     if (!reader) {
+  //       throw new Error(`Failed to get reader from response: ${response}`);
+  //     }
 
-                return undefined;
-              })
-              .filter((i) => i !== undefined) // Filter out undefined values
-        ) ?? [];
-      messages.push({
-        role: "user" as MessageType,
-        content: userMessage,
-      });
-      console.log("Sending messages:", messages);
-      const response = await client.chat.$post({
-        query: {
-          modelId: currentModel,
-        },
-        json: {
-          messages: messages,
-        },
-      });
-      // Process stream
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) {
-        throw new Error(`Failed to get reader from response: ${response}`);
-      }
+  //     let streamingMessage = "";
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) {
+  //         break;
+  //       }
+  //       const chunk: string = decoder.decode(value, { stream: true });
+  //       // console.log("Received chunk:", chunk);
+  //       streamingMessage += chunk;
 
-      let streamingMessage = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        const chunk: string = decoder.decode(value, { stream: true });
-        // console.log("Received chunk:", chunk);
-        streamingMessage += chunk;
+  //       // Append chunk to section
+  //       setSection(id, responseSectionId, (old) => ({
+  //         messages: [
+  //           {
+  //             id: messageId,
+  //             content: streamingMessage,
+  //             type: "assistant",
+  //             completed: false,
+  //           },
+  //         ],
+  //         generationTime: Date.now() - old.createdAt,
+  //         isStreaming: false, // TODO: fix the rendering shit
+  //       }));
+  //     }
 
-        // Append chunk to section
-        setSection(id, responseSectionId, (old) => ({
-          messages: [
-            {
-              id: messageId,
-              content: streamingMessage,
-              type: "assistant",
-              completed: false,
-            },
-          ],
-          generationTime: Date.now() - old.createdAt,
-          isRendering: false, // TODO: fix the rendering shit
-        }));
-      }
+  //     // TODO: Detect if response was non-200, it should display as an error.
 
-      // TODO: Detect if response was non-200, it should display as an error.
+  //     console.log("Final streaming message:", streamingMessage); // TODO: Remove
 
-      console.log("Final streaming message:", streamingMessage); // TODO: Remove
+  //     // Wrap up streaming
+  //     setSection(id, responseSectionId, (old) => ({
+  //       messages: [
+  //         {
+  //           id: messageId,
+  //           content: streamingMessage,
+  //           type: "assistant",
+  //           completed: true,
+  //         },
+  //       ],
+  //       generationTime: Date.now() - old.createdAt,
+  //       isStreaming: false,
+  //     }));
+  //   },
+  //   onSuccess: () => {
+  //     console.warn("TODO: onSuccess");
+  //     // setStreaming(null);
 
-      // Wrap up streaming
-      setSection(id, responseSectionId, (old) => ({
-        messages: [
-          {
-            id: messageId,
-            content: streamingMessage,
-            type: "assistant",
-            completed: true,
-          },
-        ],
-        generationTime: Date.now() - old.createdAt,
-        isRendering: false,
-      }));
-    },
-    onSuccess: () => {
-      console.warn("TODO: onSuccess");
-      setStreaming(null);
+  //     // Invalidate and refetch
+  //     queryClient.invalidateQueries({ queryKey: ["message", id] });
+  //   },
+  //   onError: (error) => {
+  //     console.error("Error sending prompt:", error);
 
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ["conversation", id] });
-    },
-    onError: (error) => {
-      console.error("Error sending prompt:", error);
+  //     // add system message
+  //     // setStreaming({
+  //     //   error: error.message,
+  //     // });
 
-      // add system message
-      setStreaming({
-        error: error.message,
-      });
+  //     // TODO: display error
+  //   },
+  // });
 
-      // TODO: display error
-    },
-  });
-
-  // Watch for changes in the stream buffer
-  useEffect(() => {
-    console.warn("Stream buffer changed:", isStreaming, streamBuffer);
-  }, [isStreaming, streamBuffer]);
+  // // Watch for changes in the stream buffer
+  // useEffect(() => {
+  //   console.warn("Stream buffer changed:", !!isSubmitting, streamBuffer);
+  // }, [!!isSubmitting, streamBuffer]);
 
   // Watch for changes in the input value
-  useEffect(() => {
+  const updateInputHeight = () => {
     if (textareaRef.current) {
+      // TODO: why set to auto height and then back to specific px height? vv
       textareaRef.current.style.height = "auto";
       const newHeight = Math.max(
         24,
@@ -243,35 +254,32 @@ export default function ChatInput() {
       );
       textareaRef.current.style.height = `${newHeight}px`;
     }
-  }, [inputValue]);
-
-  const handleInputContainerClick = (
-    e: React.KeyboardEvent<HTMLDivElement>
-  ) => {
-    // Only focus if clicking directly on the container, not on buttons or other interactive elements
-    if (
-      e.target === e.currentTarget ||
-      (e.currentTarget === inputContainerRef.current &&
-        !(e.target as HTMLElement).closest("button"))
-    ) {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }
   };
+  useEffect(() => {
+    updateInputHeight();
+  }, [value]); // TODO: What is this?
+
+  // const handleInputContainerClick = (
+  //   e: React.KeyboardEvent<HTMLDivElement>
+  // ) => {
+  //   // Only focus if clicking directly on the container, not on buttons or other interactive elements
+  //   if (
+  //     e.target === e.currentTarget ||
+  //     (e.currentTarget === inputContainerRef.current &&
+  //       !(e.target as HTMLElement).closest("button"))
+  //   ) {
+  //     if (textareaRef.current) {
+  //       textareaRef.current.focus();
+  //     }
+  //   }
+  // };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
 
     // Only allow input changes when not streaming
-    if (!isStreaming) {
-      setInputValue(newValue);
-
-      if (newValue.trim() !== "" && !hasTyped) {
-        setHasTyped(true);
-      } else if (newValue.trim() === "" && hasTyped) {
-        setHasTyped(false);
-      }
+    if (!isSubmitting) {
+      setValue(newValue);
 
       const textarea = textareaRef.current;
       if (textarea) {
@@ -282,25 +290,26 @@ export default function ChatInput() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && !isStreaming) {
-      // Add vibration when message is submitted
-      // navigator.vibrate(50);
 
-      const userMessage = inputValue.trim();
+    if (isSubmitting || disabled) return;
+    setIsSubmitting(true);
 
-      // Reset input
-      setInputValue("");
-      setHasTyped(false);
-      setActiveButton("none");
+    const currentInput = value;
+    const formattedInput = formatChatInput(currentInput);
+    const currentActiveButton = activeButton;
 
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
+    // Add vibration when message is submitted?
+    // navigator.vibrate(50);
 
-      // Add the message after resetting input
+    // Reset input
+    setValue("");
+    setActiveButton("none");
 
+    const success = await onSubmit(formattedInput);
+
+    if (success) {
       // Only focus the textarea on desktop, not on mobile
       if (!isMobile) {
         focusTextarea();
@@ -310,13 +319,16 @@ export default function ChatInput() {
           textareaRef.current.blur();
         }
       }
-
-      // Query for response
-      sendPrompt.mutate(userMessage);
+    } else {
+      // On error, reset the input value
+      setValue(currentInput);
+      setActiveButton(currentActiveButton);
     }
+
+    setIsSubmitting(false);
   };
 
-  // Save the current selection state
+  // // Save the current selection state
   const selectionStateRef = useRef({
     start: null as number | null,
     end: null as number | null,
@@ -328,7 +340,7 @@ export default function ChatInput() {
         end: textareaRef.current.selectionEnd,
       };
     }
-  };
+  }; // TODO: Check if this is needed
 
   // Restore the saved selection state
   const restoreSelectionState = () => {
@@ -343,8 +355,9 @@ export default function ChatInput() {
       // If no selection was saved, just focus
       textarea.focus();
     }
-  };
+  }; // TODO: Check if this is needed
 
+  const isMobile = false; // TODO: try to remove this dependency outright. might not be possible with all the keyboard listening code
   const focusTextarea = () => {
     if (textareaRef.current && !isMobile) {
       textareaRef.current.focus();
@@ -352,32 +365,30 @@ export default function ChatInput() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle Cmd+Enter on both mobile and desktop
-    if (!isStreaming && e.key === "Enter" && e.metaKey) {
+    // Handle Mod+Enter on both mobile and desktop
+    if (!isSubmitting && e.key === "Enter" && e.metaKey) {
       e.preventDefault();
       handleSubmit(e);
       return;
     }
 
     // Only handle regular Enter key (without Shift) on desktop
-    if (!isStreaming && !isMobile && e.key === "Enter" && !e.shiftKey) {
+    if (!isSubmitting && !isMobile && e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
   const toggleButton = (button: ActiveButton) => {
-    if (!isStreaming) {
-      // Save the current selection state before toggling
-      saveSelectionState();
+    // Save the current selection state before toggling
+    saveSelectionState();
 
-      setActiveButton((prev) => (prev === button ? "none" : button));
+    setActiveButton((prev) => (prev === button ? "none" : button));
 
-      // Restore the selection state after toggling
-      setTimeout(() => {
-        restoreSelectionState();
-      }, 0);
-    }
+    // Restore the selection state after toggling
+    setTimeout(() => {
+      restoreSelectionState();
+    }, 0);
   };
 
   // Model Selection
@@ -385,252 +396,250 @@ export default function ChatInput() {
     AVAILABLE_MODELS[currentModel];
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-        <div
-          ref={inputContainerRef}
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+      <div
+        ref={inputContainerRef}
+        className={cn(
+          "relative w-full rounded-3xl border border-gray-200 bg-white p-3 cursor-text",
+          isSubmitting && "opacity-80"
+        )}
+        // onKeyUp={handleInputContainerClick} // TODO: Needed?
+      >
+        {/* BLUR BORDER ABOVE INPUT */}
+        {/* TODO: fix implementation */}
+        {/* <div
           className={cn(
-            "relative w-full rounded-3xl border border-gray-200 bg-white p-3 cursor-text",
-            isStreaming && "opacity-80"
+            "absolute inset-0 rounded-3xl border border-gray-200 pointer-events-none ",
+            "opacity-80 h-[20px] mb-[20px]"
           )}
-          onKeyUp={handleInputContainerClick}
-        >
-          {/* BLUR BORDER ABOVE INPUT */}
-          {/* TODO: fix implementation */}
-          {/* <div
+        ></div> */}
+
+        {/* CHAT INPUT */}
+        <div className="mb-8">
+          <textarea
+            ref={textareaRef}
+            placeholder={placeholder}
             className={cn(
-              "absolute inset-0 rounded-3xl border border-gray-200 pointer-events-none ",
-              "opacity-80 h-[20px] mb-[20px]"
+              "min-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
+              "outline-none focus:outline-none focus-visible:outline-none",
+              "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
+              "focus:border-0 focus-visible:border-0",
+              "resize-none overflow-y-auto leading-tight",
+              "bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:font-normal text-base"
             )}
-          ></div> */}
+            value={value}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            onFocus={() => {
+              // Ensure the textarea is scrolled into view when focused
+              // TODO: allow user setting
+              if (textareaRef.current) {
+                textareaRef.current.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }
+            }}
+          />
+        </div>
 
-          {/* CHAT INPUT */}
-          <div className="mb-8">
-            <textarea
-              ref={textareaRef}
-              placeholder="Ask Anything"
-              className={cn(
-                "min-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
-                "outline-none focus:outline-none focus-visible:outline-none",
-                "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
-                "focus:border-0 focus-visible:border-0",
-                "resize-none overflow-y-auto leading-tight",
-                "bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:font-normal text-base"
-              )}
-              value={inputValue}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              autoFocus
-              onFocus={() => {
-                // Ensure the textarea is scrolled into view when focused
-                // TODO: allow user setting
-                if (textareaRef.current) {
-                  textareaRef.current.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                  });
-                }
-              }}
-            />
-          </div>
-
-          {/* PROMPT OPTIONS */}
-          <div className="absolute bottom-3 left-3 right-3">
-            <div className="flex items-center justify-between">
-              {/* LEFT ISLAND */}
-              <div className="flex items-center space-x-2 select-none ">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
+        {/* PROMPT OPTIONS */}
+        <div className="absolute bottom-3 left-3 right-3">
+          <div className="flex items-center justify-between">
+            {/* LEFT ISLAND */}
+            <div className="flex items-center space-x-2 select-none ">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "rounded-full h-8 w-8 flex-shrink-0 border-gray-200 p-0 transition-colors",
+                  activeButton === "add" && "bg-gray-100 border-gray-300"
+                )}
+                onClick={() => toggleButton("add")}
+                disabled={isSubmitting}
+              >
+                <Plus
                   className={cn(
-                    "rounded-full h-8 w-8 flex-shrink-0 border-gray-200 p-0 transition-colors",
-                    activeButton === "add" && "bg-gray-100 border-gray-300"
+                    "h-4 w-4 text-gray-500",
+                    activeButton === "add" && "text-gray-700"
                   )}
-                  onClick={() => toggleButton("add")}
-                  disabled={isStreaming}
-                >
-                  <Plus
-                    className={cn(
-                      "h-4 w-4 text-gray-500",
-                      activeButton === "add" && "text-gray-700"
-                    )}
-                  />
-                  <span className="sr-only">Add</span>
-                </Button>
+                />
+                <span className="sr-only">Add</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
+                  activeButton === "deepSearch" &&
+                    "bg-gray-100 border-gray-300"
+                )}
+                onClick={() => toggleButton("deepSearch")}
+                disabled={isSubmitting}
+              >
+                <Search
                   className={cn(
-                    "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
-                    activeButton === "deepSearch" &&
-                      "bg-gray-100 border-gray-300"
+                    "h-4 w-4 text-gray-500",
+                    activeButton === "deepSearch" && "text-gray-700"
                   )}
-                  onClick={() => toggleButton("deepSearch")}
-                  disabled={isStreaming}
-                >
-                  <Search
-                    className={cn(
-                      "h-4 w-4 text-gray-500",
-                      activeButton === "deepSearch" && "text-gray-700"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-gray-900 text-sm",
-                      activeButton === "deepSearch" && "font-medium"
-                    )}
-                  >
-                    DeepSearch
-                  </span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
+                />
+                <span
                   className={cn(
-                    "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
-                    activeButton === "think" && "bg-gray-100 border-gray-300"
+                    "text-gray-900 text-sm",
+                    activeButton === "deepSearch" && "font-medium"
                   )}
-                  onClick={() => toggleButton("think")}
-                  disabled={isStreaming}
                 >
-                  <Lightbulb
-                    className={cn(
-                      "h-4 w-4 text-gray-500",
-                      activeButton === "think" && "text-gray-700"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-gray-900 text-sm",
-                      activeButton === "think" && "font-medium"
-                    )}
-                  >
-                    Think
-                  </span>
-                </Button>
-              </div>
+                  DeepSearch
+                </span>
+              </Button>
 
-              {/* RIGHT ISLAND */}
-              <div className="flex items-center space-x-2 select-none">
-                {/* Model Selection */}
-                <Select
-                  value={currentModel as string}
-                  onValueChange={(value) => {
-                    setCurrentModel(value as ModelId);
-                    // TODO: handle support for different models
-                    setActiveButton("none");
-                    focusTextarea();
-                  }}
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
+                  activeButton === "think" && "bg-gray-100 border-gray-300"
+                )}
+                onClick={() => toggleButton("think")}
+                disabled={isSubmitting}
+              >
+                <Lightbulb
+                  className={cn(
+                    "h-4 w-4 text-gray-500",
+                    activeButton === "think" && "text-gray-700"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-gray-900 text-sm",
+                    activeButton === "think" && "font-medium"
+                  )}
                 >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select a model" />
-                    <SelectValue>
-                      {selectedModelDetails && (
-                        <div className="flex gap-2">
-                          <span className="mt-0.5">
-                            {renderCreatorIcon(
-                              selectedModelDetails.creator,
-                              24
-                            )}
-                          </span>
-                          <span>{selectedModelDetails.name}</span>
-                        </div>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
-                        // const model = { id: id, ...modelValues };
-                        return (
-                          <>
-                            {/* <SelectLabel key={id} className="font-medium text-gray-900">
-                                  {formatCreatorName(model.creator)}
-                                </SelectLabel> */}
-                            <SelectItem key={id} value={id}>
-                              <div className="flex flex-row gap-2">
-                                <div className="">
-                                  <div className="flex items-center gap-1">
-                                    <div className="pl-0.5">
-                                      {renderCreatorIcon(model.creator, 24)}
-                                    </div>
-                                    <span className="font-medium">
-                                      {model.name}
-                                    </span>
-                                    {model.status === ModelStatus.Active && (
-                                      <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
-                                        Active
-                                      </span>
-                                    )}
-                                    {model.status === ModelStatus.Alpha && (
-                                      <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
-                                        Alpha
-                                      </span>
-                                    )}
-                                    {model.status === ModelStatus.Beta && (
-                                      <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                                        Beta
-                                      </span>
-                                    )}
-                                    {model.status ===
-                                      ModelStatus.Deprecated && (
-                                      <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
-                                        Deprecated
-                                      </span>
-                                    )}
+                  Think
+                </span>
+              </Button>
+            </div>
+
+            {/* RIGHT ISLAND */}
+            <div className="flex items-center space-x-2 select-none">
+              {/* Model Selection */}
+              <Select
+                value={currentModel as string}
+                onValueChange={(value) => {
+                  setCurrentModel(value as ModelId);
+                  // TODO: handle support for different models
+                  setActiveButton("none");
+                  focusTextarea();
+                }}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select a model" />
+                  <SelectValue>
+                    {selectedModelDetails && (
+                      <div className="flex gap-2">
+                        <span className="mt-0.5">
+                          {renderCreatorIcon(
+                            selectedModelDetails.creator,
+                            24
+                          )}
+                        </span>
+                        <span>{selectedModelDetails.name}</span>
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {Object.entries(AVAILABLE_MODELS).map(([id, model]) => {
+                      // const model = { id: id, ...modelValues };
+                      return (
+                        <>
+                          {/* <SelectLabel key={id} className="font-medium text-gray-900">
+                                {formatCreatorName(model.creator)}
+                              </SelectLabel> */}
+                          <SelectItem key={id} value={id}>
+                            <div className="flex flex-row gap-2">
+                              <div className="">
+                                <div className="flex items-center gap-1">
+                                  <div className="pl-0.5">
+                                    {renderCreatorIcon(model.creator, 24)}
                                   </div>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {model.description}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {model.capabilities.map((capability) => (
-                                      <Badge
-                                        key={capability}
-                                        variant="outline"
-                                        className="mr-1"
-                                      >
-                                        {capability}
-                                      </Badge>
-                                    ))}
-                                  </p>
+                                  <span className="font-medium">
+                                    {model.name}
+                                  </span>
+                                  {model.status === ModelStatus.Active && (
+                                    <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Active
+                                    </span>
+                                  )}
+                                  {model.status === ModelStatus.Alpha && (
+                                    <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Alpha
+                                    </span>
+                                  )}
+                                  {model.status === ModelStatus.Beta && (
+                                    <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Beta
+                                    </span>
+                                  )}
+                                  {model.status ===
+                                    ModelStatus.Deprecated && (
+                                    <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
+                                      Deprecated
+                                    </span>
+                                  )}
                                 </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {model.description}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {model.capabilities.map((capability) => (
+                                    <Badge
+                                      key={capability}
+                                      variant="outline"
+                                      className="mr-1"
+                                    >
+                                      {capability}
+                                    </Badge>
+                                  ))}
+                                </p>
                               </div>
-                            </SelectItem>
-                          </>
-                        );
-                      })}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                            </div>
+                          </SelectItem>
+                        </>
+                      );
+                    })}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  variant="outline"
-                  size="icon"
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "rounded-full h-8 w-8 border-0 flex-shrink-0 transition-all duration-200",
+                  !isSubmitting ? "bg-black scale-110" : "bg-gray-200",
+                )}
+                disabled={isSubmitting}
+              >
+                <ArrowUp
                   className={cn(
-                    "rounded-full h-8 w-8 border-0 flex-shrink-0 transition-all duration-200",
-                    hasTyped ? "bg-black scale-110" : "bg-gray-200"
+                    "h-4 w-4 transition-colors",
+                    !isSubmitting ? "text-white" : "text-gray-500",
                   )}
-                  disabled={!inputValue.trim() || isStreaming}
-                >
-                  <ArrowUp
-                    className={cn(
-                      "h-4 w-4 transition-colors",
-                      hasTyped ? "text-white" : "text-gray-500"
-                    )}
-                  />
-                  <span className="sr-only">Submit</span>
-                </Button>
-              </div>
+                />
+                <span className="sr-only">Submit</span>
+              </Button>
             </div>
           </div>
         </div>
-      </form>
-    </>
+      </div>
+    </form>
   );
 }
 
@@ -685,3 +694,5 @@ const GetIconFromPath = (color: string, path: string, size: number) => {
 //       return creator;
 //   }
 // };
+
+// TODO: Re-write everything after updating models
