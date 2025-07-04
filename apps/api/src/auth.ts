@@ -18,6 +18,7 @@ export const auth = (d: D1Database) =>
         }),
         trustedOrigins: [
             "http://localhost:1420",
+            "http://localhost:3000",
             "http://localhost:8787",
             "https://kono.chat",
         ],
@@ -28,7 +29,8 @@ export const auth = (d: D1Database) =>
                 prompt: "select_account",
                 clientId: process.env.GOOGLE_CLIENT_ID,
                 clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                redirectUri: "https://localhost:1420/auth/callback/google", // TODO: This
+                // redirectUri: "https://localhost:1420/auth/callback/google", // TODO: This
+                redirectUri: "https://localhost:3000/auth/callback/google",
             },
         },
         // plugins: [

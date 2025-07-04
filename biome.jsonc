@@ -1,7 +1,10 @@
 {
     "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
     "files": {
-        "include": ["apps/**/*", "packages/**/*"],
+        "include": [
+            "apps/**/*",
+            "packages/**/*"
+        ],
         "ignore": [
             "apps/app/**/*",
             "**/worker-configuration.d.ts",
@@ -33,7 +36,10 @@
     "linter": {
         "enabled": true,
         "rules": {
-            "recommended": true
+            "recommended": true,
+            "suspicious": {
+                "noExplicitAny": "warn",
+            }
         }
     }
 }
