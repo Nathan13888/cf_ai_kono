@@ -11,11 +11,13 @@ export function getOpenapi<
         documentation: {
             info: {
                 title: "Kono Chat API",
+                // TODO: sync from cloudflare env
                 version: "1.0.0", // TODO: keep in sync with package.json?
                 description: "API for Kono Chat",
             },
             servers: [
                 { url: "http://localhost:8787", description: "Local Server" },
+                { url: process.env.API_HOST, description: "Production Server" },
             ],
             // components: {
             //   securitySchemes: {

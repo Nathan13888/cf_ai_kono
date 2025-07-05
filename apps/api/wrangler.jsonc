@@ -4,21 +4,24 @@
     "main": "src/index.ts",
     "compatibility_date": "2025-05-08",
     "compatibility_flags": ["nodejs_compat"],
-    // "vars": {
-    //   "MY_VAR": "my-variable"
-    // },
-    // "kv_namespaces": [
-    //   {
-    //     "binding": "MY_KV_NAMESPACE",
-    //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    //   }
-    // ],
-    // "r2_buckets": [
-    //   {
-    //     "binding": "MY_BUCKET",
-    //     "bucket_name": "my-bucket"
-    //   }
-    // ],
+    "vars": {
+        "BETTER_AUTH_SECRET": "",
+        "GOOGLE_GENERATIVE_AI_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "ANTHROPIC_API_KEY": "",
+        "GOOGLE_CLIENT_ID": "",
+        "GOOGLE_CLIENT_SECRET": "",
+        "BETTER_AUTH_URL": "https://api.kono.chat",
+        "UI_HOST": "https://kono.chat",
+        "API_HOST": "https://api.kono.chat"
+    },
+    "routes": [
+        {
+            "pattern": "api.kono.chat",
+            "zone_name": "kono.chat",
+            "custom_domain": true
+        }
+    ],
     "d1_databases": [
         {
             "binding": "DB",
@@ -31,28 +34,28 @@
         "bindings": [
             {
                 "name": "CHAT_DURABLE_OBJECT",
-                "class_name": "ChatDurableObject",
+                "class_name": "ChatDurableObject"
             }
         ]
     },
     "migrations": [
         {
             "tag": "v1",
-            "new_sqlite_classes":  ["ChatDurableObject"]
-        },
+            "new_sqlite_classes": ["ChatDurableObject"]
+        }
     ],
     "rules": [
         {
             "type": "Text",
             "globs": ["**/*.sql"],
-            "fallthrough": true,
-        },
+            "fallthrough": true
+        }
     ],
-    // "ai": {
-    //   "binding": "AI"
-    // },
     "observability": {
-      "enabled": true,
-    //   "head_sampling_rate": 1
+        "head_sampling_rate": 1,
+        "logs": {
+            "enabled": true
+        },
+        "enabled": true
     }
 }

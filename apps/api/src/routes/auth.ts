@@ -21,6 +21,7 @@ app.use(
 
 app.on(["POST", "GET"], "/*", (c) => {
     console.log("Request:", c.req); // TODO: Remove
+
     return auth(c.env.DB).handler(c.req.raw);
 });
 

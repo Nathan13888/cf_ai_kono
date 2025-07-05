@@ -1,7 +1,7 @@
+import type { Bindings } from "@/bindings";
 import { type DrizzleD1Database, drizzle } from "drizzle-orm/d1";
 import { createMiddleware } from "hono/factory";
 import * as schema from "./schema";
-import type { Bindings } from "@/bindings";
 
 export interface DbBindings {
     db: DrizzleD1Database<typeof schema> & {

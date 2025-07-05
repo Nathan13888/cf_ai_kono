@@ -13,7 +13,7 @@ const app = new Hono()
             origin: [
                 "http://localhost:1420",
                 "http://localhost:3000",
-                "https://kono.chat",
+                process.env.UI_HOST,
             ],
             allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             allowHeaders: ["Authorization", "Content-Type"],

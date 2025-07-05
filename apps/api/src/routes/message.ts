@@ -1,14 +1,18 @@
 import type { AuthType } from "@/auth";
+import type { Bindings } from "@/bindings";
 import type { DbBindings } from "@/db";
 import { modelIdToLM } from "@/utils/chat";
-import { messageSchema, modelIdSchema, newUserMessageSchema } from "@kono/models";
+import {
+    messageSchema,
+    modelIdSchema,
+    newUserMessageSchema,
+} from "@kono/models";
 import { Type } from "@sinclair/typebox";
+import { type CoreMessage, streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
-import { type CoreMessage, streamText } from "ai";
-import type { Bindings } from "@/bindings";
 
 const sendMessageByIdRequestSchema = newUserMessageSchema;
 const sendMessageByIdResponseSchema = Type.Object({
@@ -20,7 +24,7 @@ const requestMessageByIdResponseSchema = Type.Object({
 });
 const regenerateMessageByIdResponseSchema = messageSchema;
 
-const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
+const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
         "/:id",
         describeRoute({
@@ -78,7 +82,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
                     },
                     400,
                 );
-            } 
+            }
 
             // Find message by ID
             const { id } = c.req.param();
@@ -117,7 +121,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
             );
 
             // TODO: Finish handler
-        }
+        },
     )
     .post(
         "/:id/regenerate",
@@ -131,7 +135,9 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
                     description: "New reply message",
                     content: {
                         "application/json": {
-                            schema: resolver(regenerateMessageByIdResponseSchema),
+                            schema: resolver(
+                                regenerateMessageByIdResponseSchema,
+                            ),
                         },
                     },
                 },
@@ -184,7 +190,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
 
             // TODO: Finish handler
             return c.json({}); // TODO
-        }
+        },
     )
     .get(
         "/:id/stream",
@@ -237,7 +243,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
             const db = c.get("db");
 
             // TODO: Finish handler
-        }
+        },
     );
 
 export default app;

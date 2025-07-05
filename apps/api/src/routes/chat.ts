@@ -1,16 +1,24 @@
-import { v7 as uuidv7 } from "uuid";
+import type { AuthType } from "@/auth";
+import type { Bindings } from "@/bindings";
+import type { DbBindings } from "@/db";
+import { chats, messages } from "@/db/schema";
+// import { streamText as stream } from "hono/streaming";
+import {
+    type Chat,
+    type ChatMetadata,
+    type Message,
+    chatMetadataSchema,
+    chatSchema,
+    modelIdSchema,
+    newUserMessageSchema,
+} from "@kono/models";
 import { Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 // import { type CoreUserMessage, streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
-// import { streamText as stream } from "hono/streaming";
-import { type Chat, type ChatMetadata, chatMetadataSchema, chatSchema, type Message, type ModelId, modelIdSchema, newUserMessageSchema } from "@kono/models";
-import type { DbBindings } from "@/db";
-import type { AuthType } from "@/auth";
-import { chats, messages } from "@/db/schema";
-import { Value } from "@sinclair/typebox/value";
-import type { Bindings } from "@/bindings";
+import { v7 as uuidv7 } from "uuid";
 
 const newChatRequestSchema = newUserMessageSchema;
 
@@ -31,7 +39,7 @@ const newChatRequestSchema = newUserMessageSchema;
 const newChatResponseSchema = chatSchema;
 const chatResponseSchema = chatMetadataSchema;
 
-const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
+const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
         "/",
         describeRoute({
@@ -69,7 +77,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
                 },
                 401: {
                     description: "Unauthorized",
-                }
+                },
             },
         }),
         validator("json", newChatRequestSchema),
@@ -92,29 +100,30 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
 
             // Store new message in DB
             const tx = db; // TODO: Use an actual transaction via Cloudflare DO instead
-            const [newChat] = await tx.insert(chats)
+            const [newChat] = await tx
+                .insert(chats)
                 .values({
                     id: uuidv7(),
                     title: undefined,
                     creatorId: user.id,
                     createdAt: new Date(),
                     lastUpdatedAt: new Date(),
-                }).returning();
+                })
+                .returning();
             if (!newChat) {
                 throw new Error("Failed to create new chat for some reason");
             }
-            await tx.insert(messages)
-                .values({
-                    id: uuidv7(),
-                    status: "ungenerated",
-                    generationTime: undefined,
-                    role: "user",
-                    content: content,
-                    timestamp: new Date(),
-                    modelId: modelId,
-                    parentId: null,
-                    chatId: newChat.id,
-                });
+            await tx.insert(messages).values({
+                id: uuidv7(),
+                status: "ungenerated",
+                generationTime: undefined,
+                role: "user",
+                content: content,
+                timestamp: new Date(),
+                modelId: modelId,
+                parentId: null,
+                chatId: newChat.id,
+            });
 
             // Re-query to get the complete chat and its messages separately
             const chatData = await db.query.chats.findFirst({
@@ -146,7 +155,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
                         modelId: Value.Parse(modelIdSchema, msg.modelId),
                         parentId: msg.parentId ?? undefined,
                         chatId: msg.chatId,
-                    })
+                    }),
                 ),
             };
 
@@ -232,27 +241,31 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
 
             const db = c.get("db");
 
-            const chat: ChatMetadata | undefined = chatId.length > 0
-                ? await db
-                    .query.chats.findFirst({
-                        where: (chats, { eq }) => eq(chats.id, chatId),
-                    }).then((r) => (
-                        r ? ({
-                            id: r.id,
-                            title: r.title ?? undefined,
-                            creatorId: r.creatorId,
-                            createdAt: r.createdAt,
-                            lastUpdatedAt: r.lastUpdatedAt,
-                        }) : undefined
-                    ))
-                : undefined;
+            const chat: ChatMetadata | undefined =
+                chatId.length > 0
+                    ? await db.query.chats
+                          .findFirst({
+                              where: (chats, { eq }) => eq(chats.id, chatId),
+                          })
+                          .then((r) =>
+                              r
+                                  ? {
+                                        id: r.id,
+                                        title: r.title ?? undefined,
+                                        creatorId: r.creatorId,
+                                        createdAt: r.createdAt,
+                                        lastUpdatedAt: r.lastUpdatedAt,
+                                    }
+                                  : undefined,
+                          )
+                    : undefined;
             if (!chat) {
                 return c.json(
                     {
                         error: "Chat not found",
                     },
                     404,
-                )
+                );
             }
 
             // const messages: Message[] = await db
@@ -277,7 +290,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: DbBindings & AuthType }>()
             // };
 
             return c.json(chat);
-        }
+        },
     );
 
 export default app;
