@@ -1,0 +1,18 @@
+{
+    "$schema": "../../node_modules/wrangler/config-schema.json",
+    "name": "kono-web",
+    "main": "src/index.ts",
+    "compatibility_date": "2025-04-03",
+    "compatibility_flags": ["nodejs_compat"],
+    "vars": {
+        "UI_HOST": "https://kono.chat",
+        "API_HOST": "https://api.kono.chat"
+    },
+    "routes": [
+        {
+            "pattern": "api.kono.chat",
+            "zone_name": "kono.chat",
+            "custom_domain": true
+        }
+    ]
+}
