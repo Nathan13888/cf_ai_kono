@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
-import type { Bindings } from "@/bindings";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { auth } from "../auth";
+import type { Bindings } from "../bindings";
 
 const app = new Hono<{ Bindings: Bindings }>({
     strict: false,
@@ -10,7 +10,7 @@ const app = new Hono<{ Bindings: Bindings }>({
 app.use(
     "/*",
     cors({
-        origin: ["http://localhost:1420", "https://kono.chat"],
+        origin: [process.env.UI_HOST],
         allowHeaders: ["Content-Type", "Authorization"],
         allowMethods: ["POST", "GET", "OPTIONS"],
         exposeHeaders: ["Content-Length"],

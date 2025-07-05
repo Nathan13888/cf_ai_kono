@@ -1,8 +1,3 @@
-import type { AuthType } from "@/auth";
-import type { Bindings } from "@/bindings";
-import type { DbBindings } from "@/db";
-import { messages } from "@/db/schema";
-import { modelIdToLM } from "@/utils/chat";
 import {
     messageSchema,
     modelIdSchema,
@@ -22,6 +17,11 @@ import { type Context, Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
+import type { AuthType } from "../auth";
+import type { Bindings } from "../bindings";
+import type { DbBindings } from "../db";
+import { messages } from "../db/schema";
+import { modelIdToLM } from "../utils/chat";
 
 const sendMessageByIdRequestSchema = newUserMessageSchema;
 const sendMessageByIdResponseSchema = Type.Object({

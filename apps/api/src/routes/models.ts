@@ -1,6 +1,3 @@
-import type { AuthType } from "@/auth";
-import type { Bindings } from "@/bindings";
-import type { DbBindings } from "@/db";
 import {
     MODELS,
     type Model,
@@ -11,6 +8,9 @@ import {
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver } from "hono-openapi/typebox";
+import type { AuthType } from "../auth";
+import type { Bindings } from "../bindings";
+import type { DbBindings } from "../db";
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .get(

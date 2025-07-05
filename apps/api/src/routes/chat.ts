@@ -1,8 +1,3 @@
-import type { AuthType } from "@/auth";
-import type { Bindings } from "@/bindings";
-import type { DbBindings } from "@/db";
-import { chats, messages } from "@/db/schema";
-// import { streamText as stream } from "hono/streaming";
 import {
     type Chat,
     type ChatMetadata,
@@ -19,6 +14,10 @@ import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
 import { v7 as uuidv7 } from "uuid";
+import type { AuthType } from "../auth";
+import type { Bindings } from "../bindings";
+import type { DbBindings } from "../db";
+import { chats, messages } from "../db/schema";
 
 const newChatRequestSchema = newUserMessageSchema;
 

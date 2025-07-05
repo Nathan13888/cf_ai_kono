@@ -12,9 +12,6 @@
         "noUnusedParameters": true,
         "noUncheckedIndexedAccess": true,
         "lib": ["ESNext"],
-        "paths": {
-            "@/*": ["./src/*"]
-        },
         "jsx": "react-jsx",
         "jsxImportSource": "hono/jsx"
     }
