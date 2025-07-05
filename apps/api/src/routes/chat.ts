@@ -114,6 +114,20 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             if (!newChat) {
                 throw new Error("Failed to create new chat for some reason");
             }
+
+            // Insert the initial user message
+            tx.insert(messages).values({
+                id: uuidv7(),
+                status: "completed",
+                generationTime: undefined,
+                role: "user",
+                content: content,
+                timestamp: new Date(),
+                modelId: modelId,
+                parentId: null,
+                chatId: newChat.id,
+            });
+
             await tx.insert(messages).values({
                 id: uuidv7(),
                 status: "ungenerated",

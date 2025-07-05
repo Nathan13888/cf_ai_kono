@@ -14,10 +14,11 @@ import {
     type CoreMessage,
     type CoreSystemMessage,
     type CoreUserMessage,
+    type LanguageModelV1,
     streamText,
 } from "ai";
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
 import { streamText as stream } from "hono/streaming";
@@ -31,6 +32,79 @@ const requestMessageByIdResponseSchema = Type.Object({
     modelId: modelIdSchema,
 });
 const regenerateMessageByIdResponseSchema = messageSchema;
+
+const streamResponse = async (
+    c: Context,
+    model: LanguageModelV1,
+    messageHistory: CoreMessage[],
+    newMessageId: string,
+) => {
+    const db = c.get("db");
+
+    // Start streaming response
+    // TODO(justy): check message history construction is correct
+    const result = await streamText({
+        model: model,
+        // system: "", // TODO: Make system prompt configurable
+        messages: messageHistory,
+    });
+    const { textStream } = result;
+    // TODO: Use other bits of the stream result for things like counting usage.
+    // const { usage } = result;
+
+    c.header("Content-Encoding", "Identity");
+    return stream(
+        c,
+        async (stream) => {
+            // TODO(justy): implement Durable Objects for coordination of streaming response
+            const startTime = Date.now();
+            const message = [];
+            let messageLengthSinceLastSave = 0;
+            for await (const textPart of textStream) {
+                // TODO: implement aborting, remember to save to db
+
+                // Update full message content
+                message.push(textPart);
+                messageLengthSinceLastSave += textPart.length;
+
+                // Write the partial update to stream
+                await stream.write(textPart);
+
+                // Insert/update message in db
+                if (messageLengthSinceLastSave > 50) {
+                    await db
+                        .update(messages)
+                        .set({
+                            content: message.join(""),
+                            status: "in_progress",
+                            generationTime: Date.now() - startTime,
+                        })
+                        .where(eq(messages.id, newMessageId));
+                    messageLengthSinceLastSave = 0;
+                }
+            }
+
+            // TODO(justy): fix logging
+            console.log("message:", message.join(""));
+
+            // Finalize the message
+            await db
+                .update(messages)
+                .set({
+                    content: message.join(""),
+                    status: "completed",
+                    // generationTime: Date.now() - startTime,
+                })
+                .where(eq(messages.id, newMessageId));
+        },
+        async (err, stream) => {
+            // TODO: handle error display to user
+            // TODO: Clean up properly if either client or model API drops
+            stream.writeln("An error occurred!");
+            console.error(err);
+        },
+    );
+};
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
@@ -138,7 +212,23 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             // }
             // TODO: check if user is creator of the chat
 
+            // Initialize new user message in history and db
+            // TODO: use transaction
+            const newUserMessageId = crypto.randomUUID();
+            await db.insert(messages).values({
+                id: newUserMessageId,
+                status: "completed",
+                generationTime: undefined,
+                role: "user",
+                content: content,
+                timestamp: new Date(),
+                modelId: modelId, // requested model
+                parentId: id,
+                chatId: chatId,
+            });
+
             // Query existing messages
+            // TODO: use transaction
             const rawMessages = await db.query.messages.findMany({
                 where: (messages, { eq }) => eq(messages.chatId, chatId),
             });
@@ -170,27 +260,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 },
             );
 
-            // Initialize new user message in history and db
-            // TODO(justy): should `newMessage` just be committed to database and fetched with all `messageHistory`?
-            const newMessage: CoreUserMessage = {
-                role: "user",
-                content,
-            };
-            messageHistory.push(newMessage);
-            const newUserMessageId = crypto.randomUUID();
-            await db.insert(messages).values({
-                id: newUserMessageId,
-                status: "completed",
-                generationTime: undefined,
-                role: "user",
-                content: content,
-                timestamp: new Date(),
-                modelId: undefined,
-                parentId: id,
-                chatId: chatId,
-            });
-
             // Initialize new response
+            // TODO: use transaction
             const newMessageId = crypto.randomUUID();
             await db.insert(messages).values({
                 id: newMessageId,
@@ -204,69 +275,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 chatId: chatId,
             });
 
-            // Start streaming response
-            // TODO(justy): check message history construction is correct
-            const result = await streamText({
-                model: model,
-                // system: "", // TODO: Make system prompt configurable
-                messages: messageHistory,
-            });
-            const { textStream } = result;
-            // TODO: Use other bits of the stream result for things like counting usage.
-            // const { usage } = result;
-
-            c.header("Content-Encoding", "Identity");
-            return stream(
-                c,
-                async (stream) => {
-                    // TODO(justy): implement Durable Objects for coordination of streaming response
-                    const startTime = Date.now();
-                    const message = [];
-                    let messageLengthSinceLastSave = 0;
-                    for await (const textPart of textStream) {
-                        // TODO: implement aborting, remember to save to db
-
-                        // Update full message content
-                        message.push(textPart);
-                        messageLengthSinceLastSave += textPart.length;
-
-                        // Write the partial update to stream
-                        await stream.write(textPart);
-
-                        // Insert/update message in db
-                        if (messageLengthSinceLastSave > 50) {
-                            await db
-                                .update(messages)
-                                .set({
-                                    content: message.join(""),
-                                    status: "in_progress",
-                                    generationTime: Date.now() - startTime,
-                                })
-                                .where(eq(messages.id, newMessageId));
-                            messageLengthSinceLastSave = 0;
-                        }
-                    }
-
-                    // TODO(justy): fix logging
-                    console.log("message:", message.join(""));
-
-                    // Finalize the message
-                    await db
-                        .update(messages)
-                        .set({
-                            content: message.join(""),
-                            status: "completed",
-                            // generationTime: Date.now() - startTime,
-                        })
-                        .where(eq(messages.id, newMessageId));
-                },
-                async (err, stream) => {
-                    // TODO: handle error display to user
-                    // TODO: Clean up properly if either client or model API drops
-                    stream.writeln("An error occurred!");
-                    console.error(err);
-                },
-            );
+            return streamResponse(c, model, messageHistory, newMessageId);
         },
     )
     .post(
