@@ -99,7 +99,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             const db = c.get("db");
 
             // Store new message in DB
-            const tx = db; // TODO: Use an actual transaction via Cloudflare DO instead
+            const tx = db;
             const [newChat] = await tx
                 .insert(chats)
                 .values({

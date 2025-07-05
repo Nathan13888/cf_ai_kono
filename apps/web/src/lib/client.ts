@@ -8,8 +8,8 @@ export const client = hc<AppType>(
         fetch: ((input, init) => {
             return fetch(input, {
                 ...init,
-                credentials: "include" // Required for sending cookies cross-origin
+                credentials: "include", // Required for sending cookies cross-origin
             });
         }) satisfies typeof fetch,
-    }
+    },
 );

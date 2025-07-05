@@ -1,1 +1,1 @@
-export const FALLBACK_ROUTE = '/chat';
+export const FALLBACK_ROUTE = "/chat";
