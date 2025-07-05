@@ -33,8 +33,8 @@ export const messages = sqliteTable(
         role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
         content: text("content").notNull(),
         timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
-        modelId: text("model_id").notNull(),
-        parentId: text("parent_id"),
+        modelId: text("model_id"), // Null for user messages
+        parentId: text("parent_id"), // Null for first message in chat
         chatId: text("chat_id")
             .notNull()
             .references(() => chats.id),

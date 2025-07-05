@@ -1,11 +1,10 @@
 import { logger } from "hono/logger";
 
-import { createLogger } from "@/logger";
 import { app as route_app } from "@/route";
 import { getOpenapi } from "@/routes/openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
-const app = route_app.use(createLogger());
+const app = route_app;
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {

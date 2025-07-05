@@ -2,12 +2,15 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { authMiddleware } from "./auth";
 import { dbMiddleware } from "./db";
+import { createLogger } from "./logger";
 import auth from "./routes/auth";
 import chat from "./routes/chat";
 import message from "./routes/message";
 import models from "./routes/models";
 
+// TODO(justy): check logger placement is correct
 const app = new Hono()
+    .use(createLogger())
     .use(
         cors({
             origin: [

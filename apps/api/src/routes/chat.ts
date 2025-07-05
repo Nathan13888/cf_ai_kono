@@ -83,6 +83,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
         validator("json", newChatRequestSchema),
         async (c) => {
             // Check if user is authenticated
+            // TODO: refactor auth to middleware for all routes
             const user = c.get("user");
             if (!user) {
                 return c.json(
@@ -144,6 +145,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 creatorId: chatData.creatorId,
                 createdAt: chatData.createdAt,
                 lastUpdatedAt: chatData.lastUpdatedAt,
+
+                // TODO(justy): how likely would new chats have more than the initial message?
                 messages: chatMessages.map(
                     (msg): Message => ({
                         id: msg.id,
@@ -160,39 +163,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             };
 
             return c.json(chat);
-
-            //     // system: "", // TODO: Make system prompt configurable
-            //     messages: [
-            //         newUserMessage
-            //     ],
-            // });
-            // const { textStream } = result; // TODO: Use other bits of the stream result for things like counting usage.
-
-            // c.header("Content-Encoding", "Identity");
-            // return stream(
-            //     c,
-            //     async (stream) => {
-            //         const message = []; // TODO: push it out occasionally to DB and ensure it ends with another update
-            //         for await (const textPart of textStream) {
-            //             message.push(textPart);
-            //             // console.log("message:", message);
-            //             await stream.write(textPart);
-            //         }
-
-            //         // TODO: Write completed message
-            //         // /// Write a text with a new line ('\n').
-            //         // await stream.writeln("Hello");
-            //         // // Wait 1 second.
-            //         // await stream.sleep(5000);
-            //         // // Write a text without a new line.
-            //         // await stream.write(`Hosdfno.`);
-            //     },
-            //     async (err, stream) => {
-            //         stream.writeln("An error occurred!");
-            //         console.error(err); // TODO: Write error to message
-            //     },
-            // );
-            // // TODO: Clean up properly if either client or model API drops
         },
     )
     .get(
@@ -228,6 +198,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
         }),
         async (c) => {
             // Check if user is authenticated
+            // TODO: refactor auth to middleware for all routes
             const user = c.get("user");
             if (!user) {
                 return c.json(
