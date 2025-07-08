@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FALLBACK_ROUTE } from "@/constant";
+import { FALLBACK_ROUTE, UI_HOST } from "@/constant";
 import { authClient, isAuthenticated } from "@/lib/auth-client";
 import { type Static, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -35,15 +35,15 @@ function RouteComponent() {
         await authClient.signIn.social(
             {
                 provider: "google",
-                callbackURL: `http://localhost:3000/${redirectParam || FALLBACK_ROUTE}`, // TODO: Use env var and join path separators / properly
+                callbackURL: `${UI_HOST}/${redirectParam || FALLBACK_ROUTE}`,
                 // /**
                 //  * A URL to redirect if an error occurs during the sign in process
                 //  */
-                // errorCallbackURL: "http://localhost:3000/error",
+                // errorCallbackURL: `${UI_HOST}/error`,
                 /**
                  * A URL to redirect if the user is newly registered
                  */
-                newUserCallbackURL: "http://localhost:3000/welcome",
+                newUserCallbackURL: `${UI_HOST}/welcome`,
             },
             {
                 // onRequest: (ctx) => {

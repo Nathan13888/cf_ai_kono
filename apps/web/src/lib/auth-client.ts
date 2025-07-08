@@ -1,11 +1,11 @@
 //! For Better-Auth
 
+import { API_HOST } from "@/constant";
 import { type ParsedLocation, redirect } from "@tanstack/react-router";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-    // TODO: Inject from environment variables (different between dev and prod)
-    baseURL: "http://localhost:8787",
+    baseURL: API_HOST, // NOTE: assumes auth routes are with api routes
     basePath: "/auth",
 });
 

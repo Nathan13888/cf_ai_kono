@@ -195,5 +195,3 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     //   });
     // },
 }));
-
-// TODO: Re-write everything after updating models

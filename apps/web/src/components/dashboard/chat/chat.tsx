@@ -1,4 +1,4 @@
-import { ActiveChat } from "@/lib/chat/types";
+import type { ActiveChat } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
 

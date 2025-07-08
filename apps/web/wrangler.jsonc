@@ -5,8 +5,8 @@
     "compatibility_date": "2025-04-03",
     "compatibility_flags": ["nodejs_compat"],
     "vars": {
-        "UI_HOST": "https://kono.chat",
-        "API_HOST": "https://api.kono.chat"
+        "VITE_UI_HOST": "https://kono.chat",
+        "VITE_API_HOST": "https://api.kono.chat"
     },
     "routes": [
         {
