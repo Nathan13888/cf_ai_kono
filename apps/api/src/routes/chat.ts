@@ -5,7 +5,6 @@ import {
     chatMetadataSchema,
     chatSchema,
     modelIdSchema,
-    newUserMessageSchema,
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -17,9 +16,10 @@ import { v7 as uuidv7 } from "uuid";
 import type { AuthType } from "../auth";
 import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
-import { chats, messages } from "../db/schema";
+import { chats } from "../db/schema";
 
-const newChatRequestSchema = newUserMessageSchema;
+// const newChatRequestSchema = newUserMessageSchema;
+const newChatRequestSchema = Type.Object({});
 
 // const chatQuerySchema = Type.Object({
 //     modelId: modelIdSchema,
@@ -93,9 +93,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 );
             }
 
-            const body = c.req.valid("json");
-            const { content, modelId } = body;
-
             const db = c.get("db");
 
             // Store new message in DB
@@ -113,31 +110,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             if (!newChat) {
                 throw new Error("Failed to create new chat for some reason");
             }
-
-            // Insert the initial user message
-            tx.insert(messages).values({
-                id: uuidv7(),
-                status: "completed",
-                generationTime: undefined,
-                role: "user",
-                content: content,
-                timestamp: new Date(),
-                modelId: modelId,
-                parentId: null,
-                chatId: newChat.id,
-            });
-
-            await tx.insert(messages).values({
-                id: uuidv7(),
-                status: "ungenerated",
-                generationTime: undefined,
-                role: "user",
-                content: content,
-                timestamp: new Date(),
-                modelId: modelId,
-                parentId: null,
-                chatId: newChat.id,
-            });
 
             // Re-query to get the complete chat and its messages separately
             const chatData = await db.query.chats.findFirst({

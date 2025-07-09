@@ -1,10 +1,27 @@
 import { logger } from "hono/logger";
 
-import { app as route_app } from "@/route";
-import { getOpenapi } from "@/routes/openapi";
 import { Scalar } from "@scalar/hono-api-reference";
+import { cors } from "hono/cors";
+import { authMiddleware } from "./auth";
+import { dbMiddleware } from "./db";
+import { createLogger } from "./logger";
+import { app as route_app } from "./route";
+import { getOpenapi } from "./routes/openapi";
 
-const app = route_app;
+const app = route_app
+    .use(createLogger())
+    .use(
+        cors({
+            origin: [process.env.UI_HOST],
+            allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allowHeaders: ["Authorization", "Content-Type"],
+            exposeHeaders: ["Content-Length"],
+            maxAge: 3600,
+            credentials: true,
+        }),
+    )
+    .use(dbMiddleware)
+    .use(authMiddleware);
 
 const isDevelopment = true; // TODO: Fetch from cloudflare
 if (isDevelopment) {

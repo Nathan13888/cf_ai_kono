@@ -1,7 +1,10 @@
 import {
-    messageSchema,
-    modelIdSchema,
-    newUserMessageSchema,
+    type Message,
+    type ModelId,
+    regenerateMessageByIdResponseSchema,
+    requestMessageByIdResponseSchema,
+    sendMessageByIdRequestSchema,
+    sendMessageByIdResponseSchema,
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import {
@@ -22,16 +25,6 @@ import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
 import { messages } from "../db/schema";
 import { modelIdToLM } from "../utils/chat";
-
-const sendMessageByIdRequestSchema = newUserMessageSchema;
-const sendMessageByIdResponseSchema = Type.Object({
-    new: messageSchema,
-    reply: messageSchema,
-});
-const requestMessageByIdResponseSchema = Type.Object({
-    modelId: modelIdSchema,
-});
-const regenerateMessageByIdResponseSchema = messageSchema;
 
 const streamResponse = async (
     c: Context,
@@ -215,7 +208,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             // Initialize new user message in history and db
             // TODO: use transaction
             const newUserMessageId = crypto.randomUUID();
-            await db.insert(messages).values({
+            const replyMessage: Message = {
                 id: newUserMessageId,
                 status: "completed",
                 generationTime: undefined,
@@ -225,45 +218,13 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 modelId: modelId, // requested model
                 parentId: id,
                 chatId: chatId,
-            });
-
-            // Query existing messages
-            // TODO: use transaction
-            const rawMessages = await db.query.messages.findMany({
-                where: (messages, { eq }) => eq(messages.chatId, chatId),
-            });
-            const messageHistory: CoreMessage[] = rawMessages.map(
-                (msg): CoreMessage => {
-                    switch (msg.role) {
-                        case "user":
-                            return {
-                                role: "user",
-                                content: msg.content,
-                            } satisfies CoreUserMessage;
-                        case "assistant":
-                            return {
-                                role: "assistant",
-                                content: msg.content,
-                            } satisfies CoreAssistantMessage;
-                        case "system":
-                            return {
-                                role: "system",
-                                content: msg.content,
-                                // TODO: consider provider options?
-                                providerOptions: undefined,
-                            } satisfies CoreSystemMessage;
-                        default:
-                            throw new Error(
-                                `Unknown message role: ${msg.role}`,
-                            );
-                    }
-                },
-            );
+            };
+            await db.insert(messages).values(replyMessage);
 
             // Initialize new response
             // TODO: use transaction
             const newMessageId = crypto.randomUUID();
-            await db.insert(messages).values({
+            const newMessage: Message = {
                 id: newMessageId,
                 status: "ungenerated",
                 generationTime: undefined,
@@ -273,9 +234,13 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 modelId: modelId,
                 parentId: newUserMessageId,
                 chatId: chatId,
-            });
+            };
+            await db.insert(messages).values(newMessage);
 
-            return streamResponse(c, model, messageHistory, newMessageId);
+            return c.json({
+                reply: replyMessage,
+                new: newMessage,
+            });
         },
     )
     .post(
@@ -349,7 +314,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             return c.json({}); // TODO
         },
     )
-    // TODO(justy): remove this endpoint? only use one endpoint to stream? unless this streams from database after accidentally closing the stream?
     .get(
         "/:id/stream",
         describeRoute({
@@ -366,21 +330,38 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                         },
                     },
                 },
-                // 400: {
-                //     description: "Bad request",
-                //     content: {
-                //         "text/json": {
-                //             schema: Type.Object({
-                //                 error: Type.String(),
-                //             }),
-                //         },
-                //     },
-                // },
+                400: {
+                    description: "Bad request",
+                    content: {
+                        "text/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
+                    },
+                },
                 401: {
                     description: "Unauthorized",
                 },
                 404: {
                     description: "Message not found",
+                    content: {
+                        "text/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
+                    },
+                },
+                500: {
+                    description: "Internal server error",
+                    content: {
+                        "text/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
+                    },
                 },
             },
         }),
@@ -398,13 +379,114 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             }
 
             // Find message by ID
-            const { id } = c.req.param();
-            const db = c.get("db");
+            const { id: messageId } = c.req.param();
 
-            // TODO: Finish handler
+            // Lookup for existing message
+            const db = c.get("db");
+            const existingMessage = await db.query.messages.findFirst({
+                where: (messages, { eq }) => eq(messages.id, messageId),
+            });
+
+            if (!existingMessage) {
+                return c.json(
+                    {
+                        error: `Message with ID ${messageId} not found`,
+                    },
+                    404,
+                );
+            }
+
+            // Check for early return status
+            switch (existingMessage.status) {
+                case "completed": {
+                    // If the message is already completed, return the content
+                    return c.text(existingMessage.content);
+                }
+                case "error": {
+                    return c.json(
+                        {
+                            error: `Message with ID ${messageId} has an error`,
+                        },
+                        400,
+                    );
+                }
+                case "in_progress": {
+                    // TODO: use cloudflare durable objects
+                    return c.json(
+                        {
+                            error: `Message with ID ${messageId} is already in progress`,
+                        },
+                        400,
+                    );
+                }
+                case "ungenerated": {
+                    const chatId = existingMessage.chatId;
+                    const model = modelIdToLM(
+                        existingMessage.modelId as ModelId,
+                    );
+                    if (!model) {
+                        return c.json(
+                            {
+                                error: `Model ${existingMessage.modelId} not found`,
+                            },
+                            500,
+                        );
+                    }
+
+                    // Query existing messages
+                    // TODO: use transaction
+                    const rawMessages = await db.query.messages.findMany({
+                        where: (messages, { eq }) =>
+                            eq(messages.chatId, chatId),
+                    });
+                    const messageHistory: CoreMessage[] = rawMessages.map(
+                        (msg): CoreMessage => {
+                            switch (msg.role) {
+                                case "user":
+                                    return {
+                                        role: "user",
+                                        content: msg.content,
+                                    } satisfies CoreUserMessage;
+                                case "assistant":
+                                    return {
+                                        role: "assistant",
+                                        content: msg.content,
+                                    } satisfies CoreAssistantMessage;
+                                case "system":
+                                    return {
+                                        role: "system",
+                                        content: msg.content,
+                                        // TODO: consider provider options?
+                                        providerOptions: undefined,
+                                    } satisfies CoreSystemMessage;
+                                default:
+                                    throw new Error(
+                                        `Unknown message role: ${msg.role}`,
+                                    );
+                            }
+                        },
+                    );
+
+                    return streamResponse(c, model, messageHistory, messageId);
+                }
+                case "aborted": {
+                    return c.json(
+                        {
+                            error: `Message with ID ${messageId} was aborted`,
+                        },
+                        400,
+                    );
+                }
+                default: {
+                    return c.json(
+                        {
+                            error: `Unknown message status ${existingMessage.status} to be implemented`,
+                        },
+                        500,
+                    );
+                }
+            }
         },
     );
 
 export default app;
-
-// TODO: Use all these

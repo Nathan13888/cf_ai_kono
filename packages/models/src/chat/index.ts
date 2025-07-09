@@ -1,7 +1,8 @@
-import { Type, type Static } from "@sinclair/typebox";
-import { messagesSchema } from "./message";
+import { type Static, Type } from "@sinclair/typebox";
+import { modelIdSchema } from "../model";
 import { userIdSchema } from "../user";
 import { chatIdSchema } from "./id";
+import { messageSchema, messagesSchema, newUserMessageSchema } from "./message";
 
 export const chatMetadataSchema = Type.Object({
     /** Chat ID */
@@ -14,7 +15,7 @@ export const chatMetadataSchema = Type.Object({
     createdAt: Type.Date(),
     /** Last updated date */
     lastUpdatedAt: Type.Date(),
-})
+});
 export type ChatMetadata = Static<typeof chatMetadataSchema>;
 
 export const chatSchema = Type.Composite([
@@ -22,9 +23,19 @@ export const chatSchema = Type.Composite([
     Type.Object({
         /** The chat message */
         messages: messagesSchema,
-    })
+    }),
 ]);
 export type Chat = Static<typeof chatSchema>;
+
+export const sendMessageByIdRequestSchema = newUserMessageSchema;
+export const sendMessageByIdResponseSchema = Type.Object({
+    new: messageSchema,
+    reply: messageSchema,
+});
+export const requestMessageByIdResponseSchema = Type.Object({
+    modelId: modelIdSchema,
+});
+export const regenerateMessageByIdResponseSchema = messageSchema;
 
 export * from "./id";
 export * from "./message";
