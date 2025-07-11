@@ -43,6 +43,7 @@ export type RegenerateMessageByIdResponse = Static<
     typeof regenerateMessageByIdResponseSchema
 >;
 
+export * from "./chat";
 export * from "./id";
 export * from "./message";
 export * from "./share";

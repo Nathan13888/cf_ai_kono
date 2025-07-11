@@ -3,9 +3,9 @@ import {
     type ChatMetadata,
     type Message,
     chatSchema,
-    messageSchema,
     modelIdSchema,
-    newUserMessageSchema,
+    sendChatByIdRequestSchema,
+    sendChatByIdResponseSchema,
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -23,8 +23,6 @@ import { modelIdToLM } from "../utils/chat";
 // const newChatRequestSchema = newUserMessageSchema;
 const newChatRequestSchema = Type.Object({});
 
-const sendChatByIdRequestSchema = newUserMessageSchema;
-
 // const chatQuerySchema = Type.Object({
 //     modelId: modelIdSchema,
 //     // temperature: Type.Optional(Type.Number()),
@@ -41,10 +39,6 @@ const sendChatByIdRequestSchema = newUserMessageSchema;
 
 const newChatResponseSchema = chatSchema;
 const chatResponseSchema = chatSchema;
-const sendChatByIdResponseSchema = Type.Object({
-    new: messageSchema,
-    reply: messageSchema,
-});
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
@@ -366,10 +360,10 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             const newMessageId = crypto.randomUUID();
             const newMessage: Message = {
                 id: newMessageId,
-                status: "ungenerated",
+                status: "completed",
                 generationTime: undefined,
-                role: "assistant",
-                content: "",
+                role: "user",
+                content: content,
                 timestamp: new Date(),
                 modelId: modelId,
                 parentId: userMessages[0]?.id, // link to the last chat message
@@ -382,10 +376,10 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             const replyMessageId = crypto.randomUUID();
             const replyMessage: Message = {
                 id: replyMessageId,
-                status: "completed",
+                status: "ungenerated",
                 generationTime: undefined,
-                role: "user",
-                content: content,
+                role: "assistant",
+                content: "",
                 timestamp: new Date(),
                 modelId: modelId, // requested model
                 parentId: newMessageId,

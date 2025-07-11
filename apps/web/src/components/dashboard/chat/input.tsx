@@ -9,7 +9,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 // import { Message } from "@kono/models";
-import { formatChatInput } from "@/lib/chat";
+import { formatChatInput, isChatInputValid } from "@/lib/chat";
+import { messageChat, streamMessage } from "@/lib/chat/api";
 import { useChatsStore } from "@/lib/chat/store";
 import type { ActiveButton } from "@/lib/chat/types";
 // import { client } from "@/lib/client";
@@ -20,9 +21,10 @@ import {
     ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 // import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
     siAlibabadotcom,
     siAnthropic,
@@ -32,25 +34,17 @@ import {
 } from "simple-icons";
 
 interface ChatInputProps {
-    value: string;
-    setValue: (input: string) => void;
+    chatId: string;
     placeholder: string;
     /**
      * What to do on submit. Should hold until input is submitted.
      * @param input Input value
      * @returns Whether input was submitted successfully
      */
-    onSubmit: (input: string) => Promise<boolean>;
-    disabled: boolean;
+    // TODO: refactor web logic here
 }
 
-export function ChatInput({
-    value,
-    setValue,
-    placeholder,
-    onSubmit,
-    disabled = false,
-}: ChatInputProps) {
+export function ChatInput({ chatId, placeholder }: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const inputContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +53,84 @@ export function ChatInput({
     const currentModel = useChatsStore((state) => state.currentModel);
     const setCurrentModel = useChatsStore((state) => state.setCurrentModel);
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const value = useChatsStore((state) => state.newChatMessage);
+    const setValue = useChatsStore((state) => state.setNewChatMessage);
+
+    const currentChat = useChatsStore((state) => state.currentChat);
+
+    const appendMessage = useChatsStore(
+        (state) => state.appendMessageToCurrentChat,
+    );
+    const appendToLastMessage = useChatsStore(
+        (state) => state.appendToLastMessageOfCurrentChat,
+    );
+
+    const queryClient = useQueryClient();
+    const {
+        mutate: sendMessage,
+        isPending: isSendingMessage,
+        error: sendMessageError,
+    } = useMutation({
+        mutationFn: async (message: string) => {
+            if (!currentChat) {
+                throw new Error("No current chat to send message to.");
+            }
+
+            // Request API change
+            const parsed = await messageChat(chatId, message, currentModel);
+            if (!parsed) {
+                throw new Error("Failed to send message to chat.");
+            }
+
+            // Sanity check
+            if (
+                parsed.reply.chatId !== currentChat.id ||
+                parsed.new.chatId !== currentChat.id
+            ) {
+                // ...
+            }
+
+            console.debug(
+                "Received new message and reply from chat API:",
+                parsed,
+            );
+
+            // Add new message to the current chat
+            appendMessage(parsed.new);
+
+            // Attempt to stream the reply message if it is not completed
+            if (parsed.reply.status !== "completed") {
+                appendMessage(parsed.reply);
+
+                // Wait for streaming to complete
+                console.warn(
+                    "Streaming started for reply message:",
+                    parsed.reply.id,
+                );
+                await streamMessage(parsed.reply.id, (chunk: string) => {
+                    console.debug("Received chunk:", chunk);
+                    appendToLastMessage(chunk);
+                });
+                console.warn(
+                    "Streaming completed for reply message:",
+                    parsed.reply.id,
+                );
+
+                // Refetch the chat
+                queryClient.invalidateQueries({
+                    queryKey: ["chat", chatId],
+                });
+            } else {
+                appendMessage(parsed.reply);
+            }
+        },
+    });
+
+    const isStreaming = useChatsStore((state) => state.isStreaming);
+    const error = useChatsStore((state) => state.error);
+
+    const submitDisabled = isStreaming || !isChatInputValid(value);
+    const disabled = isStreaming;
 
     // const streamBuffer = useChatsStore((state) => state.streamBuffer);
     // const setStreaming = useChatsStore((state) => state.setStreaming);
@@ -242,20 +313,21 @@ export function ChatInput({
     // }, [!!isSubmitting, streamBuffer]);
 
     // Watch for changes in the input value
-    const updateInputHeight = () => {
-        if (textareaRef.current) {
-            // TODO: why set to auto height and then back to specific px height? vv
-            textareaRef.current.style.height = "auto";
-            const newHeight = Math.max(
-                24,
-                Math.min(textareaRef.current.scrollHeight, 160),
-            );
-            textareaRef.current.style.height = `${newHeight}px`;
-        }
-    };
-    useEffect(() => {
-        updateInputHeight();
-    }, [value]); // TODO: What is this?
+    // TODO: fix this
+    // const updateInputHeight = () => {
+    //     if (textareaRef.current) {
+    //         // TODO: why set to auto height and then back to specific px height? vv
+    //         textareaRef.current.style.height = "auto";
+    //         const newHeight = Math.max(
+    //             24,
+    //             Math.min(textareaRef.current.scrollHeight, 160),
+    //         );
+    //         textareaRef.current.style.height = `${newHeight}px`;
+    //     }
+    // };
+    // useEffect(() => {
+    //     updateInputHeight();
+    // }, [updateInputHeight]);
 
     // const handleInputContainerClick = (
     //   e: React.KeyboardEvent<HTMLDivElement>
@@ -276,7 +348,7 @@ export function ChatInput({
         const newValue = e.target.value;
 
         // Only allow input changes when not streaming
-        if (!isSubmitting) {
+        if (!isStreaming) {
             setValue(newValue);
 
             const textarea = textareaRef.current;
@@ -294,8 +366,7 @@ export function ChatInput({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (isSubmitting || disabled) return;
-        setIsSubmitting(true);
+        if (submitDisabled) return;
 
         const currentInput = value;
         const formattedInput = formatChatInput(currentInput);
@@ -308,26 +379,25 @@ export function ChatInput({
         setValue("");
         setActiveButton("none");
 
-        const success = await onSubmit(formattedInput);
+        // Send the message
+        await sendMessage(formattedInput);
 
-        if (success) {
-            // Only focus the textarea on desktop, not on mobile
-            if (!isMobile) {
-                focusTextarea();
-            } else {
-                // On mobile, blur the textarea to dismiss the keyboard
-                if (textareaRef.current) {
-                    textareaRef.current.blur();
-                }
-            }
+        // Only focus the textarea on desktop, not on mobile
+        if (!isMobile) {
+            focusTextarea();
         } else {
-            // On error, reset the input value
-            setValue(currentInput);
-            setActiveButton(currentActiveButton);
+            // On mobile, blur the textarea to dismiss the keyboard
+            if (textareaRef.current) {
+                textareaRef.current.blur();
+            }
         }
-
-        setIsSubmitting(false);
     };
+
+    useEffect(() => {
+        // On error, reset the input value
+        if (!error) return;
+        setValue("");
+    }, [error, setValue]);
 
     // // Save the current selection state
     const selectionStateRef = useRef({
@@ -367,14 +437,14 @@ export function ChatInput({
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Handle Mod+Enter on both mobile and desktop
-        if (!isSubmitting && e.key === "Enter" && e.metaKey) {
+        if (!isStreaming && e.key === "Enter" && e.metaKey) {
             e.preventDefault();
             handleSubmit(e);
             return;
         }
 
         // Only handle regular Enter key (without Shift) on desktop
-        if (!isSubmitting && !isMobile && e.key === "Enter" && !e.shiftKey) {
+        if (!isStreaming && !isMobile && e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit(e);
         }
@@ -402,7 +472,7 @@ export function ChatInput({
                 ref={inputContainerRef}
                 className={cn(
                     "relative w-full rounded-3xl border border-gray-200 bg-white p-3 cursor-text",
-                    isSubmitting && "opacity-80",
+                    isStreaming && "opacity-80",
                 )}
                 // onKeyUp={handleInputContainerClick} // TODO: Needed?
             >
@@ -431,7 +501,6 @@ export function ChatInput({
                         value={value}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        autoFocus
                         onFocus={() => {
                             // Ensure the textarea is scrolled into view when focused
                             // TODO: allow user setting
@@ -460,7 +529,7 @@ export function ChatInput({
                                         "bg-gray-100 border-gray-300",
                                 )}
                                 onClick={() => toggleButton("add")}
-                                disabled={isSubmitting}
+                                disabled={disabled}
                             >
                                 <Plus
                                     className={cn(
@@ -481,7 +550,7 @@ export function ChatInput({
                                         "bg-gray-100 border-gray-300",
                                 )}
                                 onClick={() => toggleButton("deepSearch")}
-                                disabled={isSubmitting}
+                                disabled={disabled}
                             >
                                 <Search
                                     className={cn(
@@ -510,7 +579,7 @@ export function ChatInput({
                                         "bg-gray-100 border-gray-300",
                                 )}
                                 onClick={() => toggleButton("think")}
-                                disabled={isSubmitting}
+                                disabled={disabled}
                             >
                                 <Lightbulb
                                     className={cn(
@@ -542,6 +611,7 @@ export function ChatInput({
                                     setActiveButton("none");
                                     focusTextarea();
                                 }}
+                                disabled={disabled}
                             >
                                 <SelectTrigger className="w-[200px]">
                                     <SelectValue placeholder="Select a model" />
@@ -656,16 +726,16 @@ export function ChatInput({
                                 size="icon"
                                 className={cn(
                                     "rounded-full h-8 w-8 border-0 flex-shrink-0 transition-all duration-200",
-                                    !isSubmitting
+                                    !isStreaming
                                         ? "bg-black scale-110"
                                         : "bg-gray-200",
                                 )}
-                                disabled={isSubmitting}
+                                disabled={submitDisabled}
                             >
                                 <ArrowUp
                                     className={cn(
                                         "h-4 w-4 transition-colors",
-                                        !isSubmitting
+                                        !isStreaming
                                             ? "text-white"
                                             : "text-gray-500",
                                     )}
@@ -712,10 +782,11 @@ const GetIconFromPath = (color: string, path: string, size: number) => {
         <svg
             viewBox={`0 0 ${size} ${size}`}
             xmlns="http://www.w3.org/2000/svg"
-            fill={"#" + color}
+            fill={`#${color}`}
             width={size}
             height={size}
         >
+            <title>.</title>
             <path d={path} />
         </svg>
     );

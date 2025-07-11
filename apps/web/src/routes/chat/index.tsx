@@ -1,71 +1,65 @@
-import { ChatInput } from "@/components/dashboard/chat/input";
+import { Button } from "@/components/ui/button";
+import { ProfileButton } from "@/components/ui/profile-button";
 import { checkAuthenticated } from "@/lib/auth-client";
-import { isChatInputValid } from "@/lib/chat";
-import { useChatsStore } from "@/lib/chat/store";
-import { client } from "@/lib/client";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { newChat } from "@/lib/chat/api";
+import { Outlet, createFileRoute, useRouter } from "@tanstack/react-router";
+import { PenSquare } from "lucide-react";
 
 export const Route = createFileRoute("/chat/")({
     beforeLoad: async ({ location }) => checkAuthenticated(location),
-    component: RouteComponent,
-});
+    component: () => {
+        const router = useRouter();
+        const createChat = async () => {
+            const newChatId = await newChat();
+            console.debug("New chat created with ID:", newChatId);
 
-function RouteComponent() {
-    const router = useRouter();
+            // need to create a new chat
+            if (!newChatId) {
+                throw new Error("Failed to create a new chat");
+            }
 
-    // Global states
-    const newChatMessage = useChatsStore((state) => state.newChatMessage);
-    const setNewChatMessage = useChatsStore((state) => state.setNewChatMessage);
-    const currentModel = useChatsStore((state) => state.currentModel);
+            router.navigate({
+                to: "/chat/$id",
+                params: { id: newChatId },
+            });
+        };
 
-    return (
-        // TODO: Style
-        <div className="relative flex-1 overflow-hidden h-[100svh] lg:h-screen antialiased bg-gray-50 full-size overflow-none">
-            <div className="flex flex-col flex-1 h-full overflow-x-hidden overflow-y-auto bg-gray-50">
-                {/* Shadow */}
-                {/* <div className="absolute inset-x-0 top-0 z-50 h-4 mt-12 pointer-events-none bg-gradient-to-b from-blue-400/20 to-transparent"></div> */}
+        return (
+            <div className="relative flex-1 overflow-hidden h-[100svh] lg:h-screen antialiased bg-gray-50 full-size overflow-none">
+                <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 bg-gray-50">
+                    <div className="flex items-center justify-between w-full px-2">
+                        {/* Sidebar Menu (commented out for now) */}
+                        {/*
+                        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
+                            <Menu className="w-5 h-5 text-gray-700" />
+                            <span className="sr-only">Menu</span>
+                        </Button>
+                        */}
 
-                {/* TODO: fix bottom margin to match input height */}
-                {/* <ChatScreen className="px-4 mb-48" /> */}
+                        {/* New Chat */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 mr-2 rounded-full"
+                            onClick={async () => {
+                                await createChat();
+                            }}
+                        >
+                            <PenSquare className="w-5 h-5 text-gray-700" />
+                            <span className="sr-only">New Chat</span>
+                        </Button>
 
-                <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 bg-gray-50">
-                    <ChatInput
-                        value={newChatMessage}
-                        setValue={setNewChatMessage}
-                        placeholder={"Say anything..."} // TODO: Update this
-                        onSubmit={async (input) => {
-                            // Create new chat
-                            const newChatResponse = await client.chat.$post({
-                                json: {
-                                    content: input,
-                                    modelId: currentModel,
-                                },
-                            });
+                        {/* Chat Title */}
+                        {/* <h1 className="flex-1 text-base font-medium text-center text-gray-800">
+                {chatTitle() ?? "New Chat"}
+            </h1> */}
 
-                            // If successful, clear the input
-                            if (newChatResponse.ok) {
-                                const newChatData =
-                                    await newChatResponse.json();
-                                router.navigate({
-                                    to: "/chat/$id",
-                                    params: { id: newChatData.id },
-                                });
-                                return true;
-                            } else {
-                                // Handle error
-                                const status = await newChatResponse.text();
-                                console.error(
-                                    "Failed to create new chat",
-                                    status,
-                                );
-                                // TODO: Show toast
-                                return false;
-                            }
-                        }}
-                        disabled={!isChatInputValid(newChatMessage)}
-                    />
-                </div>
+                        {/* Right item */}
+                        <ProfileButton />
+                    </div>
+                </header>
+                <Outlet />
             </div>
-        </div>
-    );
-}
+        );
+    },
+});

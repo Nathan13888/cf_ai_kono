@@ -1,18 +1,12 @@
-import type { ActiveChat } from "@/lib/chat/types";
+import { useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 // TODO: Re-write everything after updating models
 
-export interface ChatScreenProps extends React.HTMLProps<HTMLDivElement> {
-    activeChat: ActiveChat;
-}
+export interface ChatScreenProps extends React.HTMLProps<HTMLDivElement> {}
 
-export function ChatScreen({
-    activeChat,
-    className,
-    ...props
-}: ChatScreenProps) {
+export function ChatScreen({ className, ...props }: ChatScreenProps) {
     const chatContainerRef = useRef<HTMLDivElement>(null);
     //   const newSectionRef = useRef<HTMLDivElement>(null);
     //   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -24,18 +18,6 @@ export function ChatScreen({
     //   const currentSections = useChatsStore(
     //     (state) => state.currentChat?.sections
     //   );
-    //   const isStreaming = useChatsStore((state) => state.isStreaming);
-    //   const streamBuffer = useChatsStore((state) => state.streamBuffer);
-
-    //   // Get current chat chat
-    //   // const {data} = queryOptions({
-    //   //   // TODO: validate changing id is alright??
-    //   //   queryKey: ["message", id],
-    //   //   queryFn: streamedQuery({
-    //   //     queryFn:
-    //   //   }),
-    //   // });
-
     //   // Scroll to maximum position when new section is created, but only for sections after the first
     //   useEffect(() => {
     //     if (currentSections && currentSections?.length > 1) {
@@ -70,31 +52,61 @@ export function ChatScreen({
     //     }
     //   }, [isStreaming, isMobile]);
 
+    const activeChat = useChatsStore((state) => state.currentChat);
+
+    useEffect(() => {
+        console.debug("Updated chat:", activeChat?.id);
+    }, [activeChat]);
+
     return (
         <div
             ref={chatContainerRef}
             className={cn("relative flex-1", className)}
         >
-            {/* TODO: FInish this */}
+            {
+                // Render chat messages
+                activeChat?.messages.map((message, index) => (
+                    <div
+                        key={message.id}
+                        className={cn(
+                            "p-4",
+                            index % 2 === 0 ? "bg-gray-100" : "bg-white",
+                        )}
+                    >
+                        <div className="text-sm text-gray-500">
+                            {new Date(message.timestamp).toLocaleString()}
+                        </div>
+                        <div className="mt-2">{message.content}</div>
+                    </div>
+                ))
+            }
+            {
+                // Placeholder for new section
+                // <div ref={newSectionRef} className="h-4"></div>
+            }
+            {
+                // Placeholder for messages end
+                // <div ref={messagesEndRef} className="h-4"></div>
+            }
         </div>
     );
 }
 
 // const timeAgoString = (timestamp: number) => {
-//   const date = new Date(timestamp);
-//   const [timeAgo, setTimeAgo] = useState("");
+//     const date = new Date(timestamp);
+//     const [timeAgo, setTimeAgo] = useState("");
 
-//   useEffect(() => {
-//     const updateTimeAgo = () => {
-//       setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
-//     };
+//     useEffect(() => {
+//         const updateTimeAgo = () => {
+//             setTimeAgo(formatDistanceToNow(date, { addSuffix: true }));
+//         };
 
-//     // Initial update
-//     updateTimeAgo();
+//         // Initial update
+//         updateTimeAgo();
 
-//     const intervalId = setInterval(updateTimeAgo, 1000); // Update every 1 second
-//     return () => clearInterval(intervalId);
-//   }, []);
+//         const intervalId = setInterval(updateTimeAgo, 1000); // Update every 1 second
+//         return () => clearInterval(intervalId);
+//     }, []);
 
-//   return <span>{timeAgo}</span>;
+//     return <span>{timeAgo}</span>;
 // };

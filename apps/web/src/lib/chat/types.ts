@@ -1,5 +1,6 @@
 import type { Chat, Message, MessageId } from "@kono/models";
 
+export type RawChatChunk = string;
 export type Section = Message & {
     isStreaming: boolean; // TODO: necessary?
 };
@@ -12,10 +13,10 @@ export interface StreamBuffer {
     error: string | null;
 }
 
-export type ActiveButton = "none" | "add" | "deepSearch" | "think"; // TODO: Doesn't seem to be used anywhere for real
+// TODO: Doesn't seem to be used anywhere for real
+// TODO: refactor to api
+export type ActiveButton = "none" | "add" | "deepSearch" | "think";
 
 export interface ActiveChat extends Chat {
-    streams: StreamBuffer;
+    // streams: StreamBuffer;
 }
-
-export type ActiveChatWithoutId = Omit<ActiveChat, "id">;
