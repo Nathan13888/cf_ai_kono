@@ -32,10 +32,16 @@ export const sendMessageByIdResponseSchema = Type.Object({
     new: messageSchema,
     reply: messageSchema,
 });
+export type SendMessageByIdResponse = Static<
+    typeof sendMessageByIdResponseSchema
+>;
 export const requestMessageByIdResponseSchema = Type.Object({
     modelId: modelIdSchema,
 });
 export const regenerateMessageByIdResponseSchema = messageSchema;
+export type RegenerateMessageByIdResponse = Static<
+    typeof regenerateMessageByIdResponseSchema
+>;
 
 export * from "./id";
 export * from "./message";

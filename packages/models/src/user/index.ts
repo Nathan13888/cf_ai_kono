@@ -1,6 +1,9 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 
-export const userIdSchema = Type.String({ format: "uuid" });
+// TODO: currently just a non-empty string but should be uuid
+export const userIdSchema = Type.String({
+    minLength: 1,
+});
 export type UserId = Static<typeof userIdSchema>;
 
 export const userSchema = Type.Object({
@@ -16,5 +19,5 @@ export type User = Static<typeof userSchema>;
 export const profileSchema = Type.Object({
     /** Name */
     name: Type.Optional(Type.String()),
-})
+});
 export type Profile = Static<typeof profileSchema>;

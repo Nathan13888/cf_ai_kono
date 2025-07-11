@@ -1,8 +1,7 @@
 import {
     type Chat,
-    type ChatMetadata,
+    ChatMetadata,
     type Message,
-    chatMetadataSchema,
     chatSchema,
     modelIdSchema,
 } from "@kono/models";
@@ -36,7 +35,7 @@ const newChatRequestSchema = Type.Object({});
 // });
 
 const newChatResponseSchema = chatSchema;
-const chatResponseSchema = chatMetadataSchema;
+const chatResponseSchema = chatSchema;
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
@@ -54,7 +53,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 },
                 required: true,
             },
-            // validateResponse: true,
+            validateResponse: true,
             responses: {
                 200: {
                     description: "Chat created",
@@ -153,10 +152,10 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .get(
         "/:id",
         describeRoute({
-            summary: "Fetch chat metadata by ID",
+            summary: "Fetch chat by ID",
             // description: ,
             // parameters:
-            // validateResponse: true,
+            validateResponse: true,
             responses: {
                 200: {
                     description: "Chat metadata fetched",
@@ -197,7 +196,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
 
             const db = c.get("db");
 
-            const chat: ChatMetadata | undefined =
+            const metadata: ChatMetadata | undefined =
                 chatId.length > 0
                     ? await db.query.chats
                           .findFirst({
@@ -215,7 +214,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                                   : undefined,
                           )
                     : undefined;
-            if (!chat) {
+            if (!metadata) {
                 return c.json(
                     {
                         error: "Chat not found",
@@ -224,26 +223,29 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 );
             }
 
-            // const messages: Message[] = await db
-            //     .query.messages.findMany({
-            //         where: (messages, { eq }) => eq(messages.chatId, chatId),
-            //     }).then((msgs) => msgs.map(
-            //         (msg): Message => ({
-            //             id: msg.id,
-            //             status: msg.status,
-            //             generationTime: msg.generationTime,
-            //             role: msg.role,
-            //             content: msg.content,
-            //             timestamp: msg.timestamp,
-            //             modelId: Value.Parse(modelIdSchema, msg.modelId),
-            //             parentId: msg.parentId ?? undefined,
-            //             chatId: msg.chatId,
-            //         })
-            //     ));
-            // const response: Chat = {
-            //     ...chat,
-            //     messages: messages
-            // };
+            const messages: Message[] = await db.query.messages
+                .findMany({
+                    where: (messages, { eq }) => eq(messages.chatId, chatId),
+                })
+                .then((msgs) =>
+                    msgs.map(
+                        (msg): Message => ({
+                            id: msg.id,
+                            status: msg.status,
+                            generationTime: msg.generationTime,
+                            role: msg.role,
+                            content: msg.content,
+                            timestamp: msg.timestamp,
+                            modelId: Value.Parse(modelIdSchema, msg.modelId),
+                            parentId: msg.parentId ?? undefined,
+                            chatId: msg.chatId,
+                        }),
+                    ),
+                );
+            const chat: Chat = {
+                ...metadata,
+                messages: messages,
+            };
 
             return c.json(chat);
         },
