@@ -6,7 +6,6 @@ import {
     numeric,
     sqliteTable,
     text,
-    uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import {
     createInsertSchema,
@@ -42,7 +41,7 @@ export const messages = sqliteTable(
     (table) => [
         index("status_idx").on(table.status),
         index("timestamp_idx").on(table.timestamp),
-        uniqueIndex("model_id_idx").on(table.modelId),
+        // uniqueIndex("model_id_idx").on(table.modelId),
         index("parent_id_idx").on(table.parentId),
         index("chat_id_idx").on(table.chatId),
     ],

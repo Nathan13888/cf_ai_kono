@@ -1,9 +1,11 @@
 import {
     type Chat,
-    ChatMetadata,
+    type ChatMetadata,
     type Message,
     chatSchema,
+    messageSchema,
     modelIdSchema,
+    newUserMessageSchema,
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -15,10 +17,13 @@ import { v7 as uuidv7 } from "uuid";
 import type { AuthType } from "../auth";
 import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
-import { chats } from "../db/schema";
+import { chats, messages } from "../db/schema";
+import { modelIdToLM } from "../utils/chat";
 
 // const newChatRequestSchema = newUserMessageSchema;
 const newChatRequestSchema = Type.Object({});
+
+const sendChatByIdRequestSchema = newUserMessageSchema;
 
 // const chatQuerySchema = Type.Object({
 //     modelId: modelIdSchema,
@@ -36,6 +41,10 @@ const newChatRequestSchema = Type.Object({});
 
 const newChatResponseSchema = chatSchema;
 const chatResponseSchema = chatSchema;
+const sendChatByIdResponseSchema = Type.Object({
+    new: messageSchema,
+    reply: messageSchema,
+});
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
     .post(
@@ -168,6 +177,9 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 401: {
                     description: "Unauthorized",
                 },
+                403: {
+                    description: "Forbidden",
+                },
                 404: {
                     description: "Chat not found",
                     content: {
@@ -248,6 +260,143 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             };
 
             return c.json(chat);
+        },
+    )
+    .post(
+        "/:id",
+        describeRoute({
+            summary: "Send message to chat",
+            // description: ,
+            // parameters:
+            // validateResponse: true,
+            responses: {
+                200: {
+                    description: "Successful response",
+                    content: {
+                        // TODO(justy): stream response doesn't seem to be this?
+                        "application/json": {
+                            schema: resolver(sendChatByIdResponseSchema),
+                        },
+                    },
+                },
+                400: {
+                    description: "Bad request",
+                    content: {
+                        "text/json": {
+                            schema: Type.Object({
+                                error: Type.String(),
+                            }),
+                        },
+                    },
+                },
+                401: {
+                    description: "Unauthorized",
+                },
+            },
+        }),
+        validator("json", sendChatByIdRequestSchema),
+        async (c) => {
+            // Check if user is authenticated
+            // TODO: refactor auth to middleware for all routes
+            const user = c.get("user");
+            if (!user) {
+                return c.json(
+                    {
+                        error: "Unauthorized",
+                    },
+                    401,
+                );
+            }
+
+            // Fetch request body
+            const body = c.req.valid("json");
+            const { content, modelId } = body;
+
+            // Check model exists
+            const model = modelIdToLM(modelId);
+            if (!model) {
+                return c.json(
+                    {
+                        error: `Model ${modelId} not found`,
+                    },
+                    400,
+                );
+            }
+
+            const { id: chatId } = c.req.param();
+            const db = c.get("db");
+
+            // Check if the message is already being processed
+            // TODO: impl
+            // TODO: use transaction to ensure atomicity
+
+            // Check if chat exists
+            const chat = await db.query.chats.findFirst({
+                where: (chats, { eq }) => eq(chats.id, chatId),
+            });
+            if (!chat) {
+                return c.json(
+                    {
+                        error: `Chat with ID ${chatId} not found`,
+                    },
+                    404,
+                );
+            }
+
+            if (chat.creatorId !== user.id) {
+                return c.json(
+                    {
+                        error: `Chat with ID ${chatId} does not belong to user ${user.id}`,
+                    },
+                    403,
+                );
+            }
+
+            // Get newest user message in chat
+            const userMessages = await db.query.messages.findMany({
+                where: (messages, { eq }) =>
+                    eq(messages.chatId, chatId) &&
+                    eq(messages.role, "assistant"),
+                orderBy: (messages) => messages.timestamp,
+                limit: 1,
+            });
+
+            // Initialize new response
+            // TODO: use transaction
+            const newMessageId = crypto.randomUUID();
+            const newMessage: Message = {
+                id: newMessageId,
+                status: "ungenerated",
+                generationTime: undefined,
+                role: "assistant",
+                content: "",
+                timestamp: new Date(),
+                modelId: modelId,
+                parentId: userMessages[0]?.id, // link to the last chat message
+                chatId: chatId,
+            };
+            await db.insert(messages).values(newMessage);
+
+            // Initialize new user message in history and db
+            // TODO: use transaction
+            const replyMessageId = crypto.randomUUID();
+            const replyMessage: Message = {
+                id: replyMessageId,
+                status: "completed",
+                generationTime: undefined,
+                role: "user",
+                content: content,
+                timestamp: new Date(),
+                modelId: modelId, // requested model
+                parentId: newMessageId,
+                chatId: chatId,
+            };
+            await db.insert(messages).values(replyMessage);
+
+            return c.json({
+                new: newMessage,
+                reply: replyMessage,
+            });
         },
     );
 
