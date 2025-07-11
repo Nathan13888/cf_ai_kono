@@ -31,14 +31,18 @@ const streamResponse = async (
 ) => {
     const db = c.get("db");
 
+    console.log(
+        `Streaming response for message ${newMessageId} with model ${model.modelId.toString()} and history: ${JSON.stringify(messageHistory)}`,
+    );
+
     // Start streaming response
     // TODO(justy): check message history construction is correct
-    const result = await streamText({
-        model: model,
-        // system: "", // TODO: Make system prompt configurable
+    const { textStream } = await streamText({
+        model,
+        // TODO: Make system prompt configurable
+        system: "You are a helpful assistant.",
         messages: messageHistory,
     });
-    const { textStream } = result;
     // TODO: Use other bits of the stream result for things like counting usage.
     // const { usage } = result;
 
@@ -75,7 +79,7 @@ const streamResponse = async (
             }
 
             // TODO(justy): fix logging
-            console.log("message:", message.join(""));
+            console.log("fully streamed message:", message.join(""));
 
             // Finalize the message
             await db
@@ -293,33 +297,40 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                         where: (messages, { eq }) =>
                             eq(messages.chatId, chatId),
                     });
-                    const messageHistory: CoreMessage[] = rawMessages.map(
-                        (msg): CoreMessage => {
-                            switch (msg.role) {
-                                case "user":
-                                    return {
-                                        role: "user",
-                                        content: msg.content,
-                                    } satisfies CoreUserMessage;
-                                case "assistant":
-                                    return {
-                                        role: "assistant",
-                                        content: msg.content,
-                                    } satisfies CoreAssistantMessage;
-                                case "system":
-                                    return {
-                                        role: "system",
-                                        content: msg.content,
-                                        // TODO: consider provider options?
-                                        providerOptions: undefined,
-                                    } satisfies CoreSystemMessage;
-                                default:
-                                    throw new Error(
-                                        `Unknown message role: ${msg.role}`,
-                                    );
-                            }
-                        },
-                    );
+
+                    const messageHistory: CoreMessage[] = [];
+                    const mapMessageToCoreMessage = (
+                        msg: CoreMessage,
+                    ): CoreMessage => {
+                        switch (msg.role) {
+                            case "user":
+                                return {
+                                    role: "user",
+                                    content: msg.content,
+                                } satisfies CoreUserMessage;
+                            case "assistant":
+                                return {
+                                    role: "assistant",
+                                    content: msg.content,
+                                } satisfies CoreAssistantMessage;
+                            case "system":
+                                return {
+                                    role: "system",
+                                    content: msg.content,
+                                    // TODO: consider provider options?
+                                    providerOptions: undefined,
+                                } satisfies CoreSystemMessage;
+                            default:
+                                throw new Error(
+                                    `Unknown message role: ${msg.role}`,
+                                );
+                        }
+                    };
+                    for (const msg of rawMessages) {
+                        if (msg.status !== "completed") continue;
+
+                        messageHistory.push(mapMessageToCoreMessage(msg));
+                    }
 
                     return streamResponse(c, model, messageHistory, messageId);
                 }

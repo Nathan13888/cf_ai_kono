@@ -9,7 +9,6 @@ import {
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-// import { type CoreUserMessage, streamText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
