@@ -3,6 +3,7 @@
     "private": true,
     "workspaces": ["packages/*", "apps/*"],
     "scripts": {
+        "dev": "bun run --filter '{@kono/web,@kono/api}' dev",
         "lint:fix": "biome check --write ."
     },
     "dependencies": {
