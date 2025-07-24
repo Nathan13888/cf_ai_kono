@@ -19,44 +19,90 @@ interface ScrollToBottomButtonProps {
     messagesEnd: React.RefObject<HTMLDivElement>;
 }
 
-function ScrollToBottomButton({
+function useShowButton({
     chatContainer,
     messagesEnd,
 }: ScrollToBottomButtonProps) {
     const [showButton, setShowButton] = useState(false);
+    const [isScrolling, setIsScrolling] = useState(false);
 
     useEffect(() => {
         const container = chatContainer.current;
-        const messagesEndElement = messagesEnd.current;
 
-        if (!container || !messagesEndElement) return;
+        if (!container) {
+            setShowButton(false);
+            return;
+        }
 
-        const checkIfAtBottom = () => {
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    const entry = entries[0];
-                    // Show button when the messages end is not visible
-                    setShowButton(!entry.isIntersecting);
-                },
-                {
-                    root: container,
-                    threshold: 0.1,
-                },
-            );
+        // Find the last message element
+        const lastMessageElement = container.querySelector(
+            "[data-message-index]:last-of-type",
+        );
 
-            observer.observe(messagesEndElement);
+        if (!lastMessageElement) {
+            setShowButton(false);
+            return;
+        }
 
-            return () => observer.disconnect();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                // Show button when the last message is not fully visible
+                setShowButton(!entry.isIntersecting);
+            },
+            {
+                root: container,
+                threshold: 0.8, // Show button when less than 80% of last message is visible
+            },
+        );
+
+        // Scroll event handler to hide button while scrolling
+        let scrollTimeout: NodeJS.Timeout;
+        const handleScroll = () => {
+            setIsScrolling(true);
+
+            // Clear existing timeout
+            clearTimeout(scrollTimeout);
+
+            // Set timeout to show button again after scrolling stops
+            scrollTimeout = setTimeout(() => {
+                setIsScrolling(false);
+            }, 300); // Hide for some time after scroll stops
         };
 
-        const cleanup = checkIfAtBottom();
+        observer.observe(lastMessageElement);
+        container.addEventListener("scroll", handleScroll);
 
-        return cleanup;
-    }, [chatContainer, messagesEnd]);
+        return () => {
+            observer.disconnect();
+            container.removeEventListener("scroll", handleScroll);
+            clearTimeout(scrollTimeout);
+        };
+    }, [chatContainer]);
 
+    // Return false if scrolling, otherwise return the intersection state
+    return showButton && !isScrolling;
+}
+
+export function ChatScreen({
+    isFetching,
+    error,
+    className,
+    ...props
+}: ChatScreenProps) {
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+
+    const activeChat = useChatsStore((state) => state.currentChat);
+
+    useEffect(() => {
+        console.debug("Updated chat:", activeChat?.id);
+    }, [activeChat?.id]);
+
+    // Scroll to bottom functionality
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollToBottom = () => {
-        const container = chatContainer.current;
-        const messagesEndElement = messagesEnd.current;
+        const container = chatContainerRef.current;
+        const messagesEndElement = messagesEndRef.current;
 
         if (container && messagesEndElement) {
             // First try scrollIntoView on the messagesEnd element
@@ -75,92 +121,89 @@ function ScrollToBottomButton({
             }, 100);
         }
     };
-
-    if (!showButton) return null;
+    const showButton = useShowButton({
+        chatContainer: chatContainerRef,
+        messagesEnd: messagesEndRef,
+    });
 
     return (
-        <div className="absolute z-10 bottom-4 right-4">
-            <Button
-                onClick={scrollToBottom}
-                size="sm"
-                variant="secondary"
-                className="transition-shadow rounded-full shadow-lg hover:shadow-xl"
+        <div className="relative w-full h-full">
+            <div
+                ref={chatContainerRef}
+                className="h-full overflow-y-auto"
+                style={{
+                    scrollbarGutter: "stable",
+                }}
             >
-                <ChevronDown className="w-4 h-4" />
-            </Button>
-        </div>
-    );
-}
+                {!isFetching && activeChat && activeChat.messages.length > 0 ? (
+                    // Render chat messages when available
+                    <>
+                        <div
+                            className={cn(
+                                "flex flex-col h-full gap-2 pr-0",
+                                className,
+                            )}
+                        >
+                            {/* Render each message */}
+                            {activeChat?.messages.map((message, index) => (
+                                <div
+                                    key={`${message.id}-${message.content.length}`}
+                                    data-message-index={index}
+                                    className={cn(
+                                        "my-2 p-4",
+                                        // "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
+                                        message.role === "user"
+                                            ? "ml-auto mr-0 rounded-md bg-accent w-fit max-w-[calc(100%-10rem)] "
+                                            : "mr-5 w-fit max-w-[calc(100%-1.25rem)]", // padding for alternating messages
+                                    )}
+                                >
+                                    {/* TODO(ui): hover show menu?? */}
+                                    {/* TODO(ui): s*/}
 
-export function ChatScreen({
-    isFetching,
-    error,
-    className,
-    ...props
-}: ChatScreenProps) {
-    const chatContainerRef = useRef<HTMLDivElement>(null);
-
-    const activeChat = useChatsStore((state) => state.currentChat);
-
-    useEffect(() => {
-        console.debug("Updated chat:", activeChat?.id);
-    }, [activeChat?.id]);
-
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    return (
-        <div
-            ref={chatContainerRef}
-            className={cn("relative flex-1 overflow-y-auto", className)}
-        >
-            {!isFetching && activeChat && activeChat.messages.length > 0 ? (
-                // Render chat messages when available
-                <>
-                    <div className="flex flex-col h-full gap-2">
-                        {activeChat?.messages.map((message, index) => (
-                            <div
-                                key={`${message.id}-${message.content.length}`}
-                                className={cn(
-                                    "my-2 p-4",
-                                    // "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
-                                    message.role === "user"
-                                        ? "ml-auto mr-0 rounded-md bg-accent w-fit max-w-[calc(100%-10rem)] "
-                                        : "mr-5 w-fit max-w-[calc(100%-1.25rem)]", // padding for alternating messages
-                                )}
-                            >
-                                {/* TODO(ui): hover show menu?? */}
-                                {/* TODO(ui): s*/}
-
-                                {/* TODO: virtual list */}
-                                <MemoizedMarkdown
-                                    markdown={message.content}
-                                    className="prose-sm prose max-w-none"
-                                />
-                            </div>
-                        ))}
-                    </div>
-                    {/* Placeholder for bottom of chat */}
-                    <div ref={messagesEndRef} className="h-4" />
-
-                    {/* Scroll to bottom button */}
-                    <ScrollToBottomButton
-                        chatContainer={chatContainerRef}
-                        messagesEnd={messagesEndRef}
-                    />
-                </>
-            ) : (
-                // No messages yet or no active chat
-                <div className="flex items-center justify-center h-full">
-                    {/* TODO(ui): improve ui */}
-                    {error ? (
-                        <div className="text-red-500">
-                            Error loading messages: {error.toString()}
+                                    {/* TODO: virtual list */}
+                                    <MemoizedMarkdown
+                                        markdown={message.content}
+                                        className="prose-sm prose max-w-none"
+                                    />
+                                </div>
+                            ))}
                         </div>
-                    ) : isFetching ? (
-                        <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
-                    ) : (
-                        <div className="text-gray-500">No messages yet.</div>
-                    )}
+                        {/* Placeholder for bottom of chat */}
+                        <div ref={messagesEndRef} className="h-4" />
+                    </>
+                ) : (
+                    // No messages yet or no active chat
+                    <div className="flex items-center justify-center h-full">
+                        {/* TODO(ui): improve ui */}
+                        {error ? (
+                            <div className="text-red-500">
+                                Error loading messages: {error.toString()}
+                            </div>
+                        ) : isFetching ? (
+                            <Loader2 className="w-6 h-6 text-gray-500 animate-spin" />
+                        ) : (
+                            <div className="text-gray-500">
+                                No messages yet.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Scroll to bottom button - positioned relative to the component container */}
+            {showButton && (
+                <div>
+                    <Button
+                        onClick={scrollToBottom}
+                        size="sm"
+                        variant="secondary"
+                        className={cn(
+                            "absolute z-10 w-10 h-10 transition-shadow -translate-x-1/2 rounded-full shadow-lg bottom-4 left-1/2 hover:shadow-xl",
+                            "translation-all duration-500 ease-in-out", // TODO(ui): smooth transition
+                        )}
+                    >
+                        <ChevronDown className="w-4 h-4" />
+                    </Button>
                 </div>
             )}
         </div>
