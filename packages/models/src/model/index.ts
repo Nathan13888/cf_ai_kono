@@ -36,6 +36,8 @@ export const modelCreatorSchema = Type.Union([
 export type ModelCreator = Static<typeof modelCreatorSchema>;
 
 // TODO: Add links
+export const TITLE_GENERATION_MODEL_ID =
+    "gemini-2.5-flash-preview-05-20" as ModelId;
 export const MODELS: Readonly<Record<ModelId, Omit<Model, "id">>> =
     Object.freeze({
         "qwen3:1.7b": {

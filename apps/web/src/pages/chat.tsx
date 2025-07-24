@@ -44,6 +44,7 @@ export default function ChatPage({
         queryFn: async () => {
             // pass if chat is not loaded
             if (!chatId) {
+                await loadChat(null);
                 return null;
             }
 
@@ -80,7 +81,7 @@ export default function ChatPage({
     const {
         mutate: sendMessage,
         isPending: isSendingMessage,
-        error: sendMessageError,
+        error: errorSendingMessage,
     } = useMutation({
         mutationFn: async (message: string) => {
             // if (!currentChat) {
@@ -100,7 +101,7 @@ export default function ChatPage({
                 // NOTE: new chat must have successfully been created
                 console.debug("New chat created with ID:", id);
                 await loadChat(null); // clear current chat
-                router.navigate({
+                await router.navigate({
                     to: "/chat/$id",
                     params: { id },
                 });
@@ -194,7 +195,11 @@ export default function ChatPage({
                         <ChatScreen
                             className="h-full max-w-3xl px-4 mx-auto"
                             isFetching={isFetchingChat}
-                            error={errorFetchingChat}
+                            error={
+                                errorSendingMessage ??
+                                errorFetchingChat ??
+                                errorFetchingChatHistory
+                            }
                             key={chatId}
                         />
                     </div>
@@ -204,6 +209,7 @@ export default function ChatPage({
                             sendMessage={(input: string) => {
                                 sendMessage(input);
                             }}
+                            isStreaming={isSendingMessage}
                             placeholder={"Ask anything..."}
                             className="mb-3"
                         />

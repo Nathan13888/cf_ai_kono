@@ -38,7 +38,6 @@ interface ChatState {
     loadChat: (chat: Chat | null) => void;
     appendMessageToCurrentChat: (message: Message) => void;
     appendToLastMessageOfCurrentChat: (chunk: RawChatChunk) => void;
-    isStreaming: boolean;
     error: string | null;
     setTitle: (id: ChatId, title: string) => void;
 }
@@ -120,7 +119,6 @@ export const useChatsStore = create<ChatState>()(
                     chunk;
             });
         },
-        isStreaming: false,
         error: null,
 
         setTitle: (id: ChatId, title: string) => {

@@ -18,7 +18,7 @@ import {
     ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
+import { ArrowUp, Lightbulb, Loader2, Plus, Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 import {
     siAlibabadotcom,
@@ -30,6 +30,7 @@ import {
 
 interface ChatInputProps {
     sendMessage: (input: string) => void;
+    isStreaming: boolean;
     placeholder: string;
     /**
      * What to do on submit. Should hold until input is submitted.
@@ -43,6 +44,7 @@ interface ChatInputProps {
 
 export function ChatInput({
     sendMessage,
+    isStreaming,
     placeholder,
     className,
 }: ChatInputProps) {
@@ -57,65 +59,31 @@ export function ChatInput({
     const setValue = useChatsStore((state) => state.setNewChatMessage);
 
     // Loading states
-    const isStreaming = useChatsStore((state) => state.isStreaming);
     const error = useChatsStore((state) => state.error);
 
     const submitDisabled = isStreaming || !isChatInputValid(value);
-    const disabled = isStreaming;
+    const disabled = isStreaming; // entire widget is disabled (ie. model selection, buttons, etc.)
 
     // Refs
     const isMobile = useChatsStore((state) => state.isMobile);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const inputContainerRef = useRef<HTMLDivElement>(null);
 
-    // Watch for changes in the input value
-    // TODO: fix this
-    // const updateInputHeight = () => {
-    //     if (textareaRef.current) {
-    //         // TODO: why set to auto height and then back to specific px height? vv
-    //         textareaRef.current.style.height = "auto";
-    //         const newHeight = Math.max(
-    //             24,
-    //             Math.min(textareaRef.current.scrollHeight, 160),
-    //         );
-    //         textareaRef.current.style.height = `${newHeight}px`;
-    //     }
-    // };
-    // useEffect(() => {
-    //     updateInputHeight();
-    // }, [updateInputHeight]);
-
-    // const handleInputContainerClick = (
-    //   e: React.KeyboardEvent<HTMLDivElement>
-    // ) => {
-    //   // Only focus if clicking directly on the container, not on buttons or other interactive elements
-    //   if (
-    //     e.target === e.currentTarget ||
-    //     (e.currentTarget === inputContainerRef.current &&
-    //       !(e.target as HTMLElement).closest("button"))
-    //   ) {
-    //     if (textareaRef.current) {
-    //       textareaRef.current.focus();
-    //     }
-    //   }
-    // };
-
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
 
         // Only allow input changes when not streaming
-        if (!isStreaming) {
-            setValue(newValue);
+        // if (!isStreaming) {
+        setValue(newValue);
 
-            const textarea = textareaRef.current;
-            if (textarea) {
-                textarea.style.height = "auto";
-                const newHeight = Math.max(
-                    24,
-                    Math.min(textarea.scrollHeight, 160),
-                );
-                textarea.style.height = `${newHeight}px`;
-            }
+        const textarea = textareaRef.current;
+        if (textarea) {
+            // textarea.style.height = "auto";
+            const newHeight = Math.max(
+                24,
+                Math.min(textarea.scrollHeight, 180),
+            );
+            textarea.style.height = `${newHeight}px`;
         }
     };
 
@@ -143,14 +111,19 @@ export function ChatInput({
 
         const currentInput = value;
         const formattedInput = formatChatInput(currentInput);
-        const currentActiveButton = activeButton;
+        // const currentActiveButton = activeButton;
 
         // Add vibration when message is submitted?
         // navigator.vibrate(50);
 
         // Reset input
         setValue("");
-        setActiveButton("none");
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = `${24}px`;
+        }
+
+        // setActiveButton("none");
 
         // Send the message
         await sendMessage(formattedInput);
@@ -260,12 +233,12 @@ export function ChatInput({
         ></div> */}
 
                 {/* CHAT INPUT */}
-                <div className="mb-8">
+                <div className="flex mb-2">
                     <textarea
                         ref={textareaRef}
                         placeholder={placeholder}
                         className={cn(
-                            "min-h-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 mb-2 border-0",
+                            "w-full pl-2 pr-4 pt-0 pb-0 border-0",
                             "outline-none focus:outline-none focus-visible:outline-none",
                             "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
                             "focus:border-0 focus-visible:border-0",
@@ -286,6 +259,11 @@ export function ChatInput({
                             }
                         }}
                     />
+                    {isStreaming && (
+                        <div className="flex items-center w-10 ml-2 justify-right">
+                            <Loader2 className="w-6 h-6 border-2 border-gray-200 rounded-full animate-spin border-t-transparent" />
+                        </div>
+                    )}
                 </div>
 
                 {/* PROMPT OPTIONS */}
@@ -502,6 +480,7 @@ export function ChatInput({
                                 )}
                                 disabled={submitDisabled}
                             >
+                                {/* TODO(ui): abort button */}
                                 <ArrowUp
                                     className={cn(
                                         "h-4 w-4 transition-colors",

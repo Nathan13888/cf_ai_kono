@@ -2,6 +2,7 @@ import {
     type Chat,
     type ChatMetadata,
     type Message,
+    TITLE_GENERATION_MODEL_ID,
     chatMetadataSchema,
     chatSchema,
     modelIdSchema,
@@ -10,6 +11,7 @@ import {
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
+import { generateText } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
@@ -20,9 +22,6 @@ import { chats, messages } from "../db/schema";
 import { modelIdToLM } from "../utils/chat";
 
 const DEFAULT_CHAT_HISTORY_COUNT = 20;
-
-// const newChatRequestSchema = newUserMessageSchema;
-const newChatRequestSchema = Type.Object({});
 
 // const chatQuerySchema = Type.Object({
 //     modelId: modelIdSchema,
@@ -38,7 +37,6 @@ const newChatRequestSchema = Type.Object({});
 //     // n: Type.Optional(Type.Number()),
 // });
 
-const newChatResponseSchema = chatSchema;
 const chatResponseSchema = chatSchema;
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
@@ -296,20 +294,43 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 where: (chats, { eq }) => eq(chats.id, chatId),
             });
             if (!chat) {
+                // generate title based on message
+                const title_model = modelIdToLM(TITLE_GENERATION_MODEL_ID);
+                if (!title_model) {
+                    return c.json(
+                        {
+                            error: `Model ${TITLE_GENERATION_MODEL_ID} not found`,
+                        },
+                        500,
+                    );
+                }
+                const { text: title } = await generateText({
+                    model: title_model,
+                    prompt: `Generate a title for a chat with the following message: "${content}"`,
+                    maxTokens: 20,
+                });
+                console.debug(
+                    `Generated chat title for prompt ${content}`,
+                    title,
+                );
+
                 // TODO: improve validation
                 const [newChat] = await db
                     .insert(chats)
                     .values({
                         id: chatId,
-                        title: undefined,
+                        title,
                         creatorId: user.id,
                         createdAt: new Date(),
                         lastUpdatedAt: new Date(),
                     })
                     .returning();
                 if (!newChat) {
-                    throw new Error(
-                        "Failed to create new chat for some reason",
+                    return c.json(
+                        {
+                            error: `Chat with ID ${chatId} could not be created.`,
+                        },
+                        500,
                     );
                 }
                 chat = newChat;

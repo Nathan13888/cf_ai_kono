@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 // import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
-import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   siAlibabadotcom,
   siAnthropic,

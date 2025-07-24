@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
+import type { Message } from "@kono/models";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import MemoizedMarkdown from "./markdown";
@@ -145,28 +146,9 @@ export function ChatScreen({
                             )}
                         >
                             {/* Render each message */}
-                            {activeChat?.messages.map((message, index) => (
-                                <div
-                                    key={`${message.id}-${message.content.length}`}
-                                    data-message-index={index}
-                                    className={cn(
-                                        "my-2 p-4",
-                                        // "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
-                                        message.role === "user"
-                                            ? "ml-auto mr-0 rounded-md bg-accent w-fit max-w-[calc(100%-10rem)] "
-                                            : "mr-5 w-fit max-w-[calc(100%-1.25rem)]", // padding for alternating messages
-                                    )}
-                                >
-                                    {/* TODO(ui): hover show menu?? */}
-                                    {/* TODO(ui): s*/}
-
-                                    {/* TODO: virtual list */}
-                                    <MemoizedMarkdown
-                                        markdown={message.content}
-                                        className="prose-sm prose max-w-none"
-                                    />
-                                </div>
-                            ))}
+                            {activeChat?.messages.map((message, index) =>
+                                renderMessage(message, index),
+                            )}
                         </div>
                         {/* Placeholder for bottom of chat */}
                         <div ref={messagesEndRef} className="h-4" />
@@ -206,6 +188,36 @@ export function ChatScreen({
                     </Button>
                 </div>
             )}
+        </div>
+    );
+}
+
+function renderMessage(message: Message, index: number) {
+    if (message.status === "aborted" || message.status === "error") {
+        // ???
+        return null;
+    }
+
+    return (
+        <div
+            key={`${message.id}-${message.content.length}`}
+            data-message-index={index}
+            className={cn(
+                "my-2 p-4",
+                // "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
+                message.role === "user"
+                    ? "ml-auto mr-0 rounded-md bg-accent w-fit max-w-[calc(100%-10rem)] break-words overflow-wrap-anywhere"
+                    : "mr-5 w-fit max-w-[calc(100%-1.25rem)] break-words overflow-wrap-anywhere", // padding for alternating messages
+            )}
+        >
+            {/* TODO(ui): hover show menu?? */}
+            {/* TODO(ui): s*/}
+
+            {/* TODO: virtual list */}
+            <MemoizedMarkdown
+                markdown={message.content}
+                className="prose-sm prose break-words max-w-none"
+            />
         </div>
     );
 }
