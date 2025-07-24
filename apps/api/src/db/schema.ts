@@ -31,6 +31,7 @@ export const messages = sqliteTable(
         generationTime: numeric("generation_time", { mode: "number" }),
         role: text("role", { enum: ["user", "assistant", "system"] }).notNull(),
         content: text("content").notNull(),
+        attachments: text("attachments", { mode: "json" }).$type<string[]>(),
         timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
         modelId: text("model_id"), // Null for user messages
         parentId: text("parent_id"), // Null for first message in chat

@@ -25,7 +25,7 @@ export const newUserMessageSchema = Type.Object({
     /** Message content */
     content: Type.String(),
     /** Attachments */
-    attachments: Type.Optional(Type.Array(Type.String({ format: "base64" }))),
+    attachments: Type.Optional(Type.Array(Type.String())),
     /** Model ID */
     modelId: modelIdSchema,
     // TODO: Add other optional parameters like thinking
@@ -43,6 +43,8 @@ export const messageSchema = Type.Object({
     role: messageRoleSchema,
     /** Message content */
     content: Type.String(),
+    /** Message attachments */
+    attachments: Type.Optional(Type.Array(Type.String())),
     /** Message timestamp */
     timestamp: Type.Date(),
     /** Model ID */

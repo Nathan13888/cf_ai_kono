@@ -11,6 +11,7 @@ import {
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { client } from "../client";
+import { Attachment } from "./store";
 
 export async function getChatHistory(): Promise<ChatMetadata[] | null> {
     const response = await client.chat.$get();
@@ -59,6 +60,7 @@ export async function messageChat(
     id: ChatId,
     // TODO: refactor to schema request type
     message: string,
+    attachments: Attachment[],
     modelId: ModelId,
 ): Promise<SendChatByIdResponse | null> {
     // query api
@@ -68,6 +70,18 @@ export async function messageChat(
         },
         json: {
             content: message,
+            attachments: await Promise.all(
+                attachments.map(async (attachment) => {
+                    const arrayBuffer = await attachment.file.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    let binaryString = "";
+                    for (let i = 0; i < uint8Array.length; i++) {
+                        binaryString += String.fromCharCode(uint8Array[i]);
+                    }
+                    const base64 = btoa(binaryString);
+                    return base64;
+                }),
+            ),
             modelId,
         },
     });
@@ -135,4 +149,8 @@ export async function streamMessage(
     }
     // Close the reader
     reader?.releaseLock();
+}
+
+export async function upload(file: File) {
+    // TODO: impl
 }

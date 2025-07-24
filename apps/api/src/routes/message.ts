@@ -9,7 +9,9 @@ import {
     type CoreMessage,
     type CoreSystemMessage,
     type CoreUserMessage,
+    ImagePart,
     type LanguageModelV1,
+    TextPart,
     streamText,
 } from "ai";
 import { eq } from "drizzle-orm";
@@ -47,6 +49,7 @@ const streamResponse = async (
     // const { usage } = result;
 
     c.header("Content-Encoding", "Identity");
+    c.header("Content-Type", "text/plain; charset=utf-8");
     return stream(
         c,
         async (stream) => {
@@ -54,6 +57,15 @@ const streamResponse = async (
             const startTime = Date.now();
             const message = [];
             let messageLengthSinceLastSave = 0;
+
+            await db
+                .update(messages)
+                .set({
+                    content: "",
+                    status: "in_progress",
+                    generationTime: Date.now() - startTime,
+                })
+                .where(eq(messages.id, newMessageId));
             for await (const textPart of textStream) {
                 // TODO: implement aborting, remember to save to db
 
@@ -66,15 +78,8 @@ const streamResponse = async (
 
                 // Insert/update message in db
                 if (messageLengthSinceLastSave > 50) {
-                    await db
-                        .update(messages)
-                        .set({
-                            content: message.join(""),
-                            status: "in_progress",
-                            generationTime: Date.now() - startTime,
-                        })
-                        .where(eq(messages.id, newMessageId));
                     messageLengthSinceLastSave = 0;
+                    // TODO: durable objects
                 }
             }
 
@@ -87,7 +92,7 @@ const streamResponse = async (
                 .set({
                     content: message.join(""),
                     status: "completed",
-                    // generationTime: Date.now() - startTime,
+                    generationTime: Date.now() - startTime,
                 })
                 .where(eq(messages.id, newMessageId));
         },
@@ -300,14 +305,34 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
 
                     const messageHistory: CoreMessage[] = [];
                     const mapMessageToCoreMessage = (
-                        msg: CoreMessage,
+                        msg: (typeof rawMessages)[number],
                     ): CoreMessage => {
                         switch (msg.role) {
                             case "user":
                                 return {
                                     role: "user",
-                                    content: msg.content,
+                                    content:
+                                        (msg.attachments ?? []).length > 0
+                                            ? [
+                                                  {
+                                                      type: "text",
+                                                      text: msg.content,
+                                                  } as TextPart,
+                                                  ...(msg.attachments?.map(
+                                                      (a) =>
+                                                          ({
+                                                              type: "image",
+                                                              image: a,
+                                                              mimeType:
+                                                                  "image/png",
+                                                              // TODO: infer MIME type from attachment
+                                                          }) as ImagePart,
+                                                      // TODO: support other types of attachments
+                                                  ) ?? []),
+                                              ]
+                                            : msg.content,
                                 } satisfies CoreUserMessage;
+                            // TODO: support other types of outputs
                             case "assistant":
                                 return {
                                     role: "assistant",

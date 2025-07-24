@@ -4,7 +4,18 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { ActiveButton, ActiveChat } from "./types";
 
+// TODO: refactor types
 type RawChatChunk = string;
+export interface Attachment {
+    id: string;
+    name: string; // name of the file
+    type: string; // e.g., "image/png", "application/pdf"
+    createdAt: Date; // timestamp of when the attachment was added
+    // TODO: refactor file upload
+    file: File; // the actual file object
+    // TODO:
+    // preview: ???
+}
 
 // TODO: refactor name
 // TODO: refactor to @kono/ui
@@ -20,6 +31,12 @@ interface ChatState {
     openMenu: () => void;
     closeMenu: () => void;
     toggleMenu: () => void;
+
+    // Attachment States
+    attachments: Attachment[];
+    addAttachment: (a: Attachment) => void;
+    removeAttachment: (id: string) => void;
+    clearAttachments: () => void;
 
     // Input States
     currentModel: ModelId;
@@ -62,6 +79,28 @@ export const useChatsStore = create<ChatState>()(
         toggleMenu: () => {
             set((state) => {
                 state.isMenuOpen = !state.isMenuOpen;
+            });
+        },
+
+        attachments: [],
+        addAttachment: (a: Attachment) => {
+            set((state) => {
+                state.attachments.push(a);
+            });
+        },
+        removeAttachment: (id: string) => {
+            set((state) => {
+                const newAttachments = [];
+                for (const a of state.attachments) {
+                    if (a.id !== id) newAttachments.push(a);
+                }
+
+                state.attachments = newAttachments;
+            });
+        },
+        clearAttachments: () => {
+            set((state) => {
+                state.attachments = [];
             });
         },
 

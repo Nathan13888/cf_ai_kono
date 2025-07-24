@@ -10,7 +10,7 @@ import {
     streamMessage,
 } from "@/lib/chat/api";
 import { useCreateChat, useNavigateToChat } from "@/lib/chat/route";
-import { useChatsStore } from "@/lib/chat/store";
+import { type Attachment, useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
@@ -83,7 +83,10 @@ export default function ChatPage({
         isPending: isSendingMessage,
         error: errorSendingMessage,
     } = useMutation({
-        mutationFn: async (message: string) => {
+        mutationFn: async ({
+            message,
+            attachments,
+        }: { message: string; attachments: Attachment[] }) => {
             // if (!currentChat) {
             //     throw new Error("No current chat to send message to.");
             // }
@@ -108,7 +111,12 @@ export default function ChatPage({
             }
 
             // Request API change
-            const parsed = await messageChat(id, cleanedMessage, currentModel);
+            const parsed = await messageChat(
+                id,
+                cleanedMessage,
+                attachments,
+                currentModel,
+            );
             if (!parsed) {
                 throw new Error("Failed to send message to chat.");
             }
@@ -211,8 +219,11 @@ export default function ChatPage({
 
                     <div className="flex-shrink-0 w-full">
                         <ChatInput
-                            sendMessage={(input: string) => {
-                                sendMessage(input);
+                            sendMessage={(
+                                message: string,
+                                attachments: Attachment[],
+                            ) => {
+                                sendMessage({ message, attachments });
                             }}
                             isStreaming={isSendingMessage}
                             placeholder={"Ask anything..."}

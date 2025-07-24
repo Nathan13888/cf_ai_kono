@@ -9,7 +9,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { formatChatInput, isChatInputValid } from "@/lib/chat";
-import { useChatsStore } from "@/lib/chat/store";
+import { Attachment, useChatsStore } from "@/lib/chat/store";
 import type { ActiveButton } from "@/lib/chat/types";
 import {
     AVAILABLE_MODELS,
@@ -18,7 +18,14 @@ import {
     ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { ArrowUp, Lightbulb, Loader2, Plus, Search } from "lucide-react";
+import {
+    ArrowUp,
+    Lightbulb,
+    Loader2,
+    Plus,
+    Search,
+    XCircle,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 import {
     siAlibabadotcom,
@@ -29,7 +36,7 @@ import {
 } from "simple-icons";
 
 interface ChatInputProps {
-    sendMessage: (input: string) => void;
+    sendMessage: (input: string, attachments: Attachment[]) => void;
     isStreaming: boolean;
     placeholder: string;
     /**
@@ -58,6 +65,12 @@ export function ChatInput({
     const value = useChatsStore((state) => state.newChatMessage);
     const setValue = useChatsStore((state) => state.setNewChatMessage);
 
+    // Attachments
+    const attachments = useChatsStore((state) => state.attachments);
+    const addAttachment = useChatsStore((state) => state.addAttachment);
+    const removeAttachment = useChatsStore((state) => state.removeAttachment);
+    const clearAttachments = useChatsStore((state) => state.clearAttachments);
+
     // Loading states
     const error = useChatsStore((state) => state.error);
 
@@ -78,7 +91,7 @@ export function ChatInput({
 
         const textarea = textareaRef.current;
         if (textarea) {
-            // textarea.style.height = "auto";
+            textarea.style.height = "auto"; // reset height
             const newHeight = Math.max(
                 24,
                 Math.min(textarea.scrollHeight, 180),
@@ -122,11 +135,12 @@ export function ChatInput({
         if (textarea) {
             textarea.style.height = `${24}px`;
         }
+        clearAttachments();
 
         // setActiveButton("none");
 
         // Send the message
-        await sendMessage(formattedInput);
+        await sendMessage(formattedInput, attachments);
 
         // Only focus the textarea on desktop, not on mobile
         if (!isMobile) {
@@ -194,6 +208,48 @@ export function ChatInput({
         }
     };
 
+    // Paste-listener
+    useEffect(() => {
+        const handlePaste = (event: ClipboardEvent) => {
+            // Access the clipboard data
+            if (!event.clipboardData) return;
+            // TODO: limit number of uploads
+            for (const file of event.clipboardData.files) {
+                console.debug(
+                    `Pasted content: '${file.name}' (${file.type}) of size ${file.size} bytes`,
+                );
+
+                if (file.type !== "image/png") {
+                    // TODO: other supported file types
+                    console.error("Unsupported file type:", file.type);
+                    continue;
+                }
+
+                // Upload attachment
+                // TODO: impl upload
+
+                // Add attachment
+                addAttachment({
+                    id: crypto.randomUUID(),
+                    name: file.name,
+                    type: file.type,
+                    createdAt: new Date(),
+                    file,
+                });
+            }
+        };
+
+        if (textareaRef?.current) {
+            textareaRef.current.addEventListener("paste", handlePaste);
+        }
+
+        return () => {
+            if (textareaRef?.current) {
+                textareaRef.current.removeEventListener("paste", handlePaste);
+            }
+        };
+    }, [addAttachment]);
+
     // Toggle input options
     const toggleButton = (button: ActiveButton) => {
         // Save the current selection state before toggling
@@ -222,6 +278,26 @@ export function ChatInput({
             )}
             // onKeyUp={handleInputContainerClick} // TODO: Needed?
         >
+            {attachments.length > 0 && (
+                <div className="flex">
+                    {attachments.map((attachment, _) => (
+                        <div
+                            key={attachment.id}
+                            className="flex items-center gap-2 px-2 py-1 text-sm text-gray-700 bg-gray-100 rounded-lg"
+                        >
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="w-6 h-6 p-0"
+                                onClick={() => removeAttachment(attachment.id)}
+                            >
+                                <XCircle className="w-4 h-4 text-gray-500" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
             <form onSubmit={handleSubmit}>
                 {/* BLUR BORDER ABOVE INPUT */}
                 {/* TODO: fix implementation */}

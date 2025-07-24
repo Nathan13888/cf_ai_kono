@@ -23,20 +23,6 @@ import { modelIdToLM } from "../utils/chat";
 
 const DEFAULT_CHAT_HISTORY_COUNT = 20;
 
-// const chatQuerySchema = Type.Object({
-//     modelId: modelIdSchema,
-//     // temperature: Type.Optional(Type.Number()),
-//     // top_p: Type.Optional(Type.Number()),
-//     // max_tokens: Type.Optional(Type.Number()),
-//     // stop: Type.Optional(Type.String()),
-//     // stream: Type.Optional(Type.Boolean()),
-//     // presence_penalty: Type.Optional(Type.Number()),
-//     // frequency_penalty: Type.Optional(Type.Number()),
-//     // logit_bias: Type.Optional(Type.String()),
-//     // user: Type.Optional(Type.String()),
-//     // n: Type.Optional(Type.Number()),
-// });
-
 const chatResponseSchema = chatSchema;
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
@@ -269,7 +255,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
 
             // Fetch request body
             const body = c.req.valid("json");
-            const { content, modelId } = body;
+            const { content, attachments, modelId } = body;
 
             // Check model exists
             const model = modelIdToLM(modelId);
@@ -281,6 +267,20 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                     400,
                 );
             }
+
+            // Check if attachments are required and model supports them
+            // if (
+            //     attachments &&
+            //     MODELS[modelId].capabilities?.includes("multimodal")
+            // ) {
+            //     return c.json(
+            //         {
+            //             error: `Model ${modelId} does not support attachments`,
+            //         },
+            //         400,
+            //     );
+            // }
+            // TODO: scan each attachment for problems or other restrictions
 
             const { id: chatId } = c.req.param();
             const db = c.get("db");
@@ -362,6 +362,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 generationTime: undefined,
                 role: "user",
                 content: content,
+                attachments: attachments,
                 timestamp: new Date(),
                 modelId: modelId,
                 parentId: userMessages[0]?.id, // link to the last chat message
