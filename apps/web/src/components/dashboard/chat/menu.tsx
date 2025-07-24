@@ -1,6 +1,7 @@
 import { useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
 import type { ChatMetadata } from "@kono/models";
+import { useEffect } from "react";
 
 export default function ChatMenu({
     history,
@@ -14,31 +15,33 @@ export default function ChatMenu({
     className?: string;
 }) {
     const isMenuOpen = useChatsStore((state) => state.isMenuOpen);
+    const setIsMobile = useChatsStore((state) => state.setIsMobile);
+    const closeMenu = useChatsStore((state) => state.closeMenu);
+
+    // Automatically open and close based on screen size
+    useEffect(() => {
+        const autoResize = () => {
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                // Close menu on mobile
+                setIsMobile(true);
+                closeMenu();
+            }
+        };
+
+        // first check
+        autoResize();
+
+        // listener
+        window.addEventListener("resize", autoResize);
+        return () => {
+            window.removeEventListener("resize", autoResize);
+        };
+    }, [closeMenu, setIsMobile]);
 
     if (!isMenuOpen) {
         return null; // Don't render the menu if it's not open
     }
-
-    // const isMobile = useChatsStore((state) => state.isMobile);
-    // const setMobile = useChatsStore((state) => state.setIsMobile);
-    // const openMenu = useChatsStore((state) => state.openMenu);
-    // const closeMenu = useChatsStore((state) => state.closeMenu);
-
-    // Automatically open and close based on screen size
-    // useEffect(() => {
-    //     if (mainContainerRef?.current) {
-    //         const isMobile = window.innerWidth < 768;
-    //         if (isMobile) {
-    //             // Close menu on mobile
-    //             // setMobile(true);
-    //             closeMenu();
-    //         } else {
-    //             // Open menu on desktop
-    //             // setMobile(false);
-    //             openMenu();
-    //         }
-    //     }
-    // }, [mainContainerRef, openMenu, closeMenu]);
 
     return (
         <div
