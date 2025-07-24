@@ -9,7 +9,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { formatChatInput, isChatInputValid } from "@/lib/chat";
-import { messageChat, streamMessage } from "@/lib/chat/api";
 import { useChatsStore } from "@/lib/chat/store";
 import type { ActiveButton } from "@/lib/chat/types";
 import {
@@ -19,7 +18,6 @@ import {
     ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 import {
@@ -31,7 +29,7 @@ import {
 } from "simple-icons";
 
 interface ChatInputProps {
-    chatId: string;
+    sendMessage: (input: string) => void;
     placeholder: string;
     /**
      * What to do on submit. Should hold until input is submitted.
@@ -43,7 +41,11 @@ interface ChatInputProps {
     className?: string;
 }
 
-export function ChatInput({ chatId, placeholder, className }: ChatInputProps) {
+export function ChatInput({
+    sendMessage,
+    placeholder,
+    className,
+}: ChatInputProps) {
     // UI states
     const activeButton = useChatsStore((state) => state.activeButton);
     const setActiveButton = useChatsStore((state) => state.setActiveButton);
@@ -53,89 +55,6 @@ export function ChatInput({ chatId, placeholder, className }: ChatInputProps) {
     // Current input value
     const value = useChatsStore((state) => state.newChatMessage);
     const setValue = useChatsStore((state) => state.setNewChatMessage);
-
-    // Current chat state and setters
-    const currentChat = useChatsStore((state) => state.currentChat);
-    const appendMessage = useChatsStore(
-        (state) => state.appendMessageToCurrentChat,
-    );
-    const appendToLastMessage = useChatsStore(
-        (state) => state.appendToLastMessageOfCurrentChat,
-    );
-
-    // Mutate chat send message
-    const queryClient = useQueryClient();
-    const {
-        mutate: sendMessage,
-        isPending: isSendingMessage,
-        error: sendMessageError,
-    } = useMutation({
-        mutationFn: async (message: string) => {
-            if (!currentChat) {
-                throw new Error("No current chat to send message to.");
-            }
-
-            // Validate input
-            if (!isChatInputValid(message)) {
-                throw new Error("Invalid chat input.");
-            }
-
-            // Trim whitespace
-            const cleanedMessage = message.trim();
-
-            // Request API change
-            const parsed = await messageChat(
-                chatId,
-                cleanedMessage,
-                currentModel,
-            );
-            if (!parsed) {
-                throw new Error("Failed to send message to chat.");
-            }
-
-            // Sanity check
-            if (
-                parsed.reply.chatId !== currentChat.id ||
-                parsed.new.chatId !== currentChat.id
-            ) {
-                // ...
-            }
-
-            console.debug(
-                "Received new message and reply from chat API:",
-                parsed,
-            );
-
-            // Add new message to the current chat
-            appendMessage(parsed.new);
-
-            // Attempt to stream the reply message if it is not completed
-            if (parsed.reply.status !== "completed") {
-                appendMessage(parsed.reply);
-
-                // Wait for streaming to complete
-                console.warn(
-                    "Streaming started for reply message:",
-                    parsed.reply.id,
-                );
-                await streamMessage(parsed.reply.id, (chunk: string) => {
-                    console.debug("Received chunk:", chunk);
-                    appendToLastMessage(chunk);
-                });
-                console.warn(
-                    "Streaming completed for reply message:",
-                    parsed.reply.id,
-                );
-
-                // Refetch the chat
-                queryClient.invalidateQueries({
-                    queryKey: ["chat", chatId],
-                });
-            } else {
-                appendMessage(parsed.reply);
-            }
-        },
-    });
 
     // Loading states
     const isStreaming = useChatsStore((state) => state.isStreaming);

@@ -35,7 +35,7 @@ interface ChatState {
 
     // Current Chat
     currentChat: ActiveChat | null;
-    loadChat: (chat: Chat) => void;
+    loadChat: (chat: Chat | null) => void;
     appendMessageToCurrentChat: (message: Message) => void;
     appendToLastMessageOfCurrentChat: (chunk: RawChatChunk) => void;
     isStreaming: boolean;
@@ -80,9 +80,13 @@ export const useChatsStore = create<ChatState>()(
             set({ newChatMessage: message }),
 
         currentChat: null,
-        loadChat: (chat: Chat) => {
+        loadChat: (chat: Chat | null) => {
             set((state) => {
                 // TODO: check if current chat is already set
+                if (!chat) {
+                    state.currentChat = null;
+                    return;
+                }
                 state.currentChat = {
                     ...chat,
                 };

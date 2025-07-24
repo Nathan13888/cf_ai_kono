@@ -30,33 +30,6 @@ export async function getChatHistory(): Promise<ChatMetadata[] | null> {
     }
 }
 
-export async function newChat(): Promise<string | null> {
-    // Request for new chat
-    const response = await client.chat.$post({
-        json: {},
-    });
-
-    if (!response.ok) {
-        console.error("Failed to create new chat", await response.text());
-        // state.error = "Failed to create new chat";
-        // TODO: fix error handling
-        return null;
-    }
-
-    // Parse the response
-    try {
-        const body = await response.json();
-        const chat = Value.Parse(chatSchema, body);
-        // state.currentChat = chat;
-        return chat.id;
-    } catch (e) {
-        console.error("Failed to parse new chat", e);
-        // state.error = "Failed to parse new chat";
-        // TODO: fix error handling
-        return null;
-    }
-}
-
 export async function getChatById(chatId: string): Promise<Chat | null> {
     const response = await client.chat[":id"].$get({
         param: {
@@ -83,7 +56,7 @@ export async function getChatById(chatId: string): Promise<Chat | null> {
 }
 
 export async function messageChat(
-    chatId: ChatId,
+    id: ChatId,
     // TODO: refactor to schema request type
     message: string,
     modelId: ModelId,
@@ -91,7 +64,7 @@ export async function messageChat(
     // query api
     const response = await client.chat[":id"].$post({
         param: {
-            id: chatId,
+            id,
         },
         json: {
             content: message,
@@ -101,7 +74,7 @@ export async function messageChat(
 
     if (!response.ok) {
         console.error(
-            `Failed to send message to chat "${chatId}"`,
+            `Failed to send message to chat "${id}"`,
             await response.text(),
         );
         // TODO: fix error handling
@@ -114,7 +87,7 @@ export async function messageChat(
         const parsed = Value.Parse(sendChatByIdResponseSchema, body);
         return parsed;
     } catch (e) {
-        console.error(`Failed to parse response for chat "${chatId}"`, e);
+        console.error(`Failed to parse response for chat "${id}"`, e);
         // TODO: fix error handling
         return null;
     }

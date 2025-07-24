@@ -13,7 +13,6 @@ import { Value } from "@sinclair/typebox/value";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
-import { v7 as uuidv7 } from "uuid";
 import type { AuthType } from "../auth";
 import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
@@ -118,117 +117,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             }));
 
             return c.json(chatHistory);
-        },
-    )
-    .post(
-        "/",
-        describeRoute({
-            summary: "Create a new chat",
-            // description: ,
-            // parameters:
-            requestBody: {
-                description: "New chat request",
-                content: {
-                    "application/json": {
-                        schema: newChatRequestSchema,
-                    },
-                },
-                required: true,
-            },
-            validateResponse: true,
-            responses: {
-                200: {
-                    description: "Chat created",
-                    content: {
-                        "text/plain": {
-                            schema: resolver(newChatResponseSchema),
-                        },
-                    },
-                },
-                400: {
-                    description: "Bad Request",
-                    content: {
-                        "application/json": {
-                            schema: Type.Object({
-                                error: Type.String(),
-                            }),
-                        },
-                    },
-                },
-                401: {
-                    description: "Unauthorized",
-                },
-            },
-        }),
-        validator("json", newChatRequestSchema),
-        async (c) => {
-            // Check if user is authenticated
-            // TODO: refactor auth to middleware for all routes
-            const user = c.get("user");
-            if (!user) {
-                return c.json(
-                    {
-                        error: "Unauthorized",
-                    },
-                    401,
-                );
-            }
-
-            const db = c.get("db");
-
-            // Store new message in DB
-            const tx = db;
-            const [newChat] = await tx
-                .insert(chats)
-                .values({
-                    id: uuidv7(),
-                    title: undefined,
-                    creatorId: user.id,
-                    createdAt: new Date(),
-                    lastUpdatedAt: new Date(),
-                })
-                .returning();
-            if (!newChat) {
-                throw new Error("Failed to create new chat for some reason");
-            }
-
-            // Re-query to get the complete chat and its messages separately
-            const chatData = await db.query.chats.findFirst({
-                where: (chats, { eq }) => eq(chats.id, newChat.id),
-            });
-
-            if (!chatData) {
-                throw new Error("Failed to fetch created chat");
-            }
-
-            const chatMessages = await db.query.messages.findMany({
-                where: (messages, { eq }) => eq(messages.chatId, newChat.id),
-            });
-
-            const chat: Chat = {
-                id: chatData.id,
-                title: chatData.title ?? undefined,
-                creatorId: chatData.creatorId,
-                createdAt: chatData.createdAt,
-                lastUpdatedAt: chatData.lastUpdatedAt,
-
-                // TODO(justy): how likely would new chats have more than the initial message?
-                messages: chatMessages.map(
-                    (msg): Message => ({
-                        id: msg.id,
-                        status: msg.status,
-                        generationTime: msg.generationTime,
-                        role: msg.role,
-                        content: msg.content,
-                        timestamp: msg.timestamp,
-                        modelId: Value.Parse(modelIdSchema, msg.modelId),
-                        parentId: msg.parentId ?? undefined,
-                        chatId: msg.chatId,
-                    }),
-                ),
-            };
-
-            return c.json(chat);
         },
     )
     .get(
@@ -404,16 +292,27 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             // TODO: use transaction to ensure atomicity
 
             // Check if chat exists
-            const chat = await db.query.chats.findFirst({
+            let chat = await db.query.chats.findFirst({
                 where: (chats, { eq }) => eq(chats.id, chatId),
             });
             if (!chat) {
-                return c.json(
-                    {
-                        error: `Chat with ID ${chatId} not found`,
-                    },
-                    404,
-                );
+                // TODO: improve validation
+                const [newChat] = await db
+                    .insert(chats)
+                    .values({
+                        id: chatId,
+                        title: undefined,
+                        creatorId: user.id,
+                        createdAt: new Date(),
+                        lastUpdatedAt: new Date(),
+                    })
+                    .returning();
+                if (!newChat) {
+                    throw new Error(
+                        "Failed to create new chat for some reason",
+                    );
+                }
+                chat = newChat;
             }
 
             if (chat.creatorId !== user.id) {
