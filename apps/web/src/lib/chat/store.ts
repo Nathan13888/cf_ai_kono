@@ -2,7 +2,9 @@ import { DEFAULT_MODEL, type ModelId } from "@/lib/constants";
 import type { Chat, ChatId, Message } from "@kono/models";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import type { ActiveButton, ActiveChat, RawChatChunk } from "./types";
+import type { ActiveButton, ActiveChat } from "./types";
+
+type RawChatChunk = string;
 
 // TODO: refactor name
 // TODO: refactor to @kono/ui

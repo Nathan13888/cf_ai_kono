@@ -306,12 +306,11 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 }
                 const { text: title } = await generateText({
                     model: title_model,
-                    prompt: `Generate a title for a chat with the following message: "${content}"`,
-                    maxTokens: 20,
+                    system: "Concise title generator",
+                    prompt: `Generate a short title for this conversation based on this initial request: "${content}"`,
                 });
                 console.debug(
-                    `Generated chat title for prompt ${content}`,
-                    title,
+                    `Generated chat title for prompt ${content}: '${title}'`,
                 );
 
                 // TODO: improve validation

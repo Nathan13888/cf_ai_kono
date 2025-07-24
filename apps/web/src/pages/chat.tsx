@@ -113,6 +113,11 @@ export default function ChatPage({
                 throw new Error("Failed to send message to chat.");
             }
 
+            // Reload chat history
+            queryClient.invalidateQueries({
+                queryKey: ["history"],
+            });
+
             // Sanity check
             // if (
             //     parsed.reply.chatId !== currentChat.id ||
