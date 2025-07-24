@@ -5,12 +5,19 @@ import { immer } from "zustand/middleware/immer";
 import type { ActiveButton, ActiveChat, RawChatChunk } from "./types";
 
 // TODO: refactor name
+// TODO: refactor to @kono/ui
 interface ChatState {
     // Page layout
-    // isMobile: boolean | null;
+    isMobile: boolean | null;
+    setIsMobile: (_: boolean) => void;
     // viewportHeight: number;
-    // setIsMobile: (_: boolean) => void;
     // setViewportHeight: (_: number) => void;
+
+    // UI States
+    isMenuOpen: boolean;
+    openMenu: () => void;
+    closeMenu: () => void;
+    toggleMenu: () => void;
 
     // Input States
     currentModel: ModelId;
@@ -39,14 +46,23 @@ interface ChatState {
 // TODO: refactor name
 export const useChatsStore = create<ChatState>()(
     immer((set) => ({
-        // isMobile: null,
+        isMobile: null,
         // viewportHeight: 0,
-        // setIsMobile: (isMobile: boolean) => {
-        //   set({ isMobile });
-        // },
+        setIsMobile: (isMobile: boolean) => {
+            set({ isMobile });
+        },
         // setViewportHeight: (vh: number) => {
         //   set({ viewportHeight: vh });
         // },
+
+        isMenuOpen: false, // defaults to closed in case window is tiny
+        openMenu: () => set({ isMenuOpen: true }),
+        closeMenu: () => set({ isMenuOpen: false }),
+        toggleMenu: () => {
+            set((state) => {
+                state.isMenuOpen = !state.isMenuOpen;
+            });
+        },
 
         currentModel: DEFAULT_MODEL, // TODO: persistence. Fetch from local storage in the future
         setCurrentModel: (id: ModelId) => {

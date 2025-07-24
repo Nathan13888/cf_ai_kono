@@ -1,65 +1,21 @@
-import { Button } from "@/components/ui/button";
-import { ProfileButton } from "@/components/ui/profile-button";
+import ChatHeader from "@/components/dashboard/chat/header";
 import { checkAuthenticated } from "@/lib/auth-client";
-import { newChat } from "@/lib/chat/api";
-import { Outlet, createFileRoute, useRouter } from "@tanstack/react-router";
-import { PenSquare } from "lucide-react";
+import { useCreateChat } from "@/lib/chat/route";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/chat/")({
     beforeLoad: async ({ location }) => checkAuthenticated(location),
-    component: () => {
-        const router = useRouter();
-        const createChat = async () => {
-            const newChatId = await newChat();
-            console.debug("New chat created with ID:", newChatId);
-
-            // need to create a new chat
-            if (!newChatId) {
-                throw new Error("Failed to create a new chat");
-            }
-
-            router.navigate({
-                to: "/chat/$id",
-                params: { id: newChatId },
-            });
-        };
-
-        return (
-            <div className="relative flex-1 overflow-hidden h-[100svh] lg:h-screen antialiased bg-gray-50 full-size overflow-none">
-                <header className="fixed top-0 left-0 right-0 z-20 flex items-center h-12 bg-gray-50">
-                    <div className="flex items-center justify-between w-full px-2">
-                        {/* Sidebar Menu (commented out for now) */}
-                        {/*
-                        <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full">
-                            <Menu className="w-5 h-5 text-gray-700" />
-                            <span className="sr-only">Menu</span>
-                        </Button>
-                        */}
-
-                        {/* New Chat */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="w-8 h-8 mr-2 rounded-full"
-                            onClick={async () => {
-                                await createChat();
-                            }}
-                        >
-                            <PenSquare className="w-5 h-5 text-gray-700" />
-                            <span className="sr-only">New Chat</span>
-                        </Button>
-
-                        {/* Chat Title */}
-                        {/* <h1 className="flex-1 text-base font-medium text-center text-gray-800">
-                {chatTitle() ?? "New Chat"}
-            </h1> */}
-
-                        {/* Right item */}
-                        <ProfileButton />
-                    </div>
-                </header>
-                <Outlet />
-            </div>
-        );
-    },
+    component: RouteComponent,
 });
+
+function RouteComponent() {
+    const createChat = useCreateChat();
+
+    return (
+        <div className="relative flex-1 overflow-hidden h-[100svh] lg:h-screen antialiased bg-gray-50 full-size overflow-none">
+            <ChatHeader createChat={createChat} />
+
+            <Outlet />
+        </div>
+    );
+}

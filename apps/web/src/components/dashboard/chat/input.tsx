@@ -8,12 +8,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-// import { Message } from "@kono/models";
 import { formatChatInput, isChatInputValid } from "@/lib/chat";
 import { messageChat, streamMessage } from "@/lib/chat/api";
 import { useChatsStore } from "@/lib/chat/store";
 import type { ActiveButton } from "@/lib/chat/types";
-// import { client } from "@/lib/client";
 import {
     AVAILABLE_MODELS,
     type Model,
@@ -22,7 +20,6 @@ import {
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-// import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Lightbulb, Plus, Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 import {
@@ -42,22 +39,23 @@ interface ChatInputProps {
      * @returns Whether input was submitted successfully
      */
     // TODO: refactor web logic here
+
+    className?: string;
 }
 
-export function ChatInput({ chatId, placeholder }: ChatInputProps) {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const inputContainerRef = useRef<HTMLDivElement>(null);
-
+export function ChatInput({ chatId, placeholder, className }: ChatInputProps) {
+    // UI states
     const activeButton = useChatsStore((state) => state.activeButton);
     const setActiveButton = useChatsStore((state) => state.setActiveButton);
     const currentModel = useChatsStore((state) => state.currentModel);
     const setCurrentModel = useChatsStore((state) => state.setCurrentModel);
 
+    // Current input value
     const value = useChatsStore((state) => state.newChatMessage);
     const setValue = useChatsStore((state) => state.setNewChatMessage);
 
+    // Current chat state and setters
     const currentChat = useChatsStore((state) => state.currentChat);
-
     const appendMessage = useChatsStore(
         (state) => state.appendMessageToCurrentChat,
     );
@@ -65,6 +63,7 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         (state) => state.appendToLastMessageOfCurrentChat,
     );
 
+    // Mutate chat send message
     const queryClient = useQueryClient();
     const {
         mutate: sendMessage,
@@ -76,8 +75,20 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                 throw new Error("No current chat to send message to.");
             }
 
+            // Validate input
+            if (!isChatInputValid(message)) {
+                throw new Error("Invalid chat input.");
+            }
+
+            // Trim whitespace
+            const cleanedMessage = message.trim();
+
             // Request API change
-            const parsed = await messageChat(chatId, message, currentModel);
+            const parsed = await messageChat(
+                chatId,
+                cleanedMessage,
+                currentModel,
+            );
             if (!parsed) {
                 throw new Error("Failed to send message to chat.");
             }
@@ -126,191 +137,17 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         },
     });
 
+    // Loading states
     const isStreaming = useChatsStore((state) => state.isStreaming);
     const error = useChatsStore((state) => state.error);
 
     const submitDisabled = isStreaming || !isChatInputValid(value);
     const disabled = isStreaming;
 
-    // const streamBuffer = useChatsStore((state) => state.streamBuffer);
-    // const setStreaming = useChatsStore((state) => state.setStreaming);
-    // const isMobile = useChatsStore((state) => state.isMobile);
-    // const currentSections = useChatsStore(
-    //   (state) => state.currentChat?.sections
-    // );
-    // const addSection = useChatsStore((state) => state.addSection);
-    // const setSection = useChatsStore((state) => state.setSection);
-
-    // TODO: vv copy anything useful away from this
-    // // Mutate chat chat by posting response
-    // const queryClient = useQueryClient();
-    // const sendPrompt = useMutation({
-    //   // TODO: support different types of user input
-    //   // TODO: include "target" last message to reconciliate with cloud-client state discrepancies
-    //   mutationFn: async (userMessage: string) => {
-    //     // Initialize message of user
-    //     const userMessageObj = {
-    //       id: crypto.randomUUID(),
-    //       thinking: null,
-    //       messages: [
-    //         {
-    //           id: crypto.randomUUID(),
-    //           content: userMessage,
-    //           type: "user",
-    //           completed: true,
-    //         },
-    //       ],
-    //       generationTime: null,
-    //       createdAt: Date.now(),
-    //       isStreaming: false,
-    //     } satisfies Section;
-    //     addSection(id, userMessageObj);
-
-    //     // Prepare stream from server
-    //     const responseSectionId = crypto.randomUUID(); // response from agent
-    //     const messageId = crypto.randomUUID(); // message in response
-    //     addSection(id, {
-    //       id: responseSectionId,
-    //       thinking: null,
-    //       messages: [
-    //         {
-    //           id: messageId,
-    //           content: null,
-    //           type: "assistant",
-    //           completed: null, // TODO: null or false?
-    //         },
-    //       ], // no messages to indicate rendering
-    //       generationTime: null,
-    //       createdAt: Date.now(),
-    //       isStreaming: false, // TODO: yeet dis shit
-    //     } satisfies Section);
-
-    //     setStreaming({
-    //       messageId,
-    //     });
-
-    //     // Hit chat endpoint
-    //     // Prepare request
-    //     const messages: Message[] =
-    //       currentSections?.flatMap(
-    //         (section): Message[] =>
-    //           section.messages
-    //             .map((message) => {
-    //               if (message?.content) {
-    //                 let content = "";
-    //                 if (typeof message.content === "string") {
-    //                   content = message.content;
-    //                 } else if (Array.isArray(message.content)) {
-    //                   content = message.content
-    //                     .map((chunk: Chunk) => chunk.text)
-    //                     .join("");
-    //                 }
-    //                 return {
-    //                   id: crypto.randomUUID() as string,
-    //                   inProgress: false,
-    //                   role: message.type,
-    //                   content: content,
-    //                   parentId: undefined, // TODO: this is wrong
-    //                   timestamp: Date.now(),
-    //                   modelId: currentModel,
-    //                 };
-    //               }
-
-    //               return undefined;
-    //             })
-    //             .filter((i) => i !== undefined) // Filter out undefined values
-    //       ) ?? [];
-    //     messages.push({
-    //       id: crypto.randomUUID() as string,
-    //       inProgress: false,
-    //       role: "user" as MessageType,
-    //       content: userMessage,
-    //       parentId: undefined, // TODO: this is wrong
-    //       timestamp: Date.now(),
-    //       modelId: currentModel,
-    //     });
-    //     console.log("Sending messages:", messages);
-    //     const response = await client.chat.$post({
-    //       query: {
-    //         modelId: currentModel,
-    //       },
-    //       json: {
-    //         messages: messages,
-    //       },
-    //     });
-    //     // Process stream
-    //     const reader = response.body?.getReader();
-    //     const decoder = new TextDecoder();
-    //     if (!reader) {
-    //       throw new Error(`Failed to get reader from response: ${response}`);
-    //     }
-
-    //     let streamingMessage = "";
-    //     while (true) {
-    //       const { done, value } = await reader.read();
-    //       if (done) {
-    //         break;
-    //       }
-    //       const chunk: string = decoder.decode(value, { stream: true });
-    //       // console.log("Received chunk:", chunk);
-    //       streamingMessage += chunk;
-
-    //       // Append chunk to section
-    //       setSection(id, responseSectionId, (old) => ({
-    //         messages: [
-    //           {
-    //             id: messageId,
-    //             content: streamingMessage,
-    //             type: "assistant",
-    //             completed: false,
-    //           },
-    //         ],
-    //         generationTime: Date.now() - old.createdAt,
-    //         isStreaming: false, // TODO: fix the rendering shit
-    //       }));
-    //     }
-
-    //     // TODO: Detect if response was non-200, it should display as an error.
-
-    //     console.log("Final streaming message:", streamingMessage); // TODO: Remove
-
-    //     // Wrap up streaming
-    //     setSection(id, responseSectionId, (old) => ({
-    //       messages: [
-    //         {
-    //           id: messageId,
-    //           content: streamingMessage,
-    //           type: "assistant",
-    //           completed: true,
-    //         },
-    //       ],
-    //       generationTime: Date.now() - old.createdAt,
-    //       isStreaming: false,
-    //     }));
-    //   },
-    //   onSuccess: () => {
-    //     console.warn("TODO: onSuccess");
-    //     // setStreaming(null);
-
-    //     // Invalidate and refetch
-    //     queryClient.invalidateQueries({ queryKey: ["message", id] });
-    //   },
-    //   onError: (error) => {
-    //     console.error("Error sending prompt:", error);
-
-    //     // add system message
-    //     // setStreaming({
-    //     //   error: error.message,
-    //     // });
-
-    //     // TODO: display error
-    //   },
-    // });
-
-    // // Watch for changes in the stream buffer
-    // useEffect(() => {
-    //   console.warn("Stream buffer changed:", !!isSubmitting, streamBuffer);
-    // }, [!!isSubmitting, streamBuffer]);
+    // Refs
+    const isMobile = useChatsStore((state) => state.isMobile);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const inputContainerRef = useRef<HTMLDivElement>(null);
 
     // Watch for changes in the input value
     // TODO: fix this
@@ -363,6 +200,23 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         }
     };
 
+    const focusTextArea = () => {
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+            // TODO: scroll end of chat into view
+            // textareaRef.current.scrollIntoView({
+            //     behavior: "smooth",
+            //     block: "center",
+            // });
+        }
+    };
+
+    useEffect(() => {
+        if (textareaRef.current && !isMobile) {
+            textareaRef.current.focus();
+        }
+    }, [isMobile]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -384,7 +238,9 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
 
         // Only focus the textarea on desktop, not on mobile
         if (!isMobile) {
-            focusTextarea();
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+            }
         } else {
             // On mobile, blur the textarea to dismiss the keyboard
             if (textareaRef.current) {
@@ -428,14 +284,10 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         }
     }; // TODO: Check if this is needed
 
-    const isMobile = false; // TODO: try to remove this dependency outright. might not be possible with all the keyboard listening code
-    const focusTextarea = () => {
-        if (textareaRef.current && !isMobile) {
-            textareaRef.current.focus();
-        }
-    };
-
+    // Shortcuts
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // TODO: SEARCH shortcut
+
         // Handle Mod+Enter on both mobile and desktop
         if (!isStreaming && e.key === "Enter" && e.metaKey) {
             e.preventDefault();
@@ -450,6 +302,7 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         }
     };
 
+    // Toggle input options
     const toggleButton = (button: ActiveButton) => {
         // Save the current selection state before toggling
         saveSelectionState();
@@ -462,20 +315,22 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
         }, 0);
     };
 
-    // Model Selection
+    // Select Model
     const selectedModelDetails: Omit<Model, "id"> | undefined =
         AVAILABLE_MODELS[currentModel];
 
     return (
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-            <div
-                ref={inputContainerRef}
-                className={cn(
-                    "relative w-full rounded-3xl border border-gray-200 bg-white p-3 cursor-text",
-                    isStreaming && "opacity-80",
-                )}
-                // onKeyUp={handleInputContainerClick} // TODO: Needed?
-            >
+        <div
+            ref={inputContainerRef}
+            className={cn(
+                "relative w-full rounded-3xl border border-accent bg-background p-3 cursor-text",
+                isStreaming && "opacity-80",
+                "max-w-3xl mx-auto",
+                className,
+            )}
+            // onKeyUp={handleInputContainerClick} // TODO: Needed?
+        >
+            <form onSubmit={handleSubmit}>
                 {/* BLUR BORDER ABOVE INPUT */}
                 {/* TODO: fix implementation */}
                 {/* <div
@@ -491,12 +346,12 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                         ref={textareaRef}
                         placeholder={placeholder}
                         className={cn(
-                            "min-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 border-0",
+                            "min-h-fit max-h-[160px] w-full pl-2 pr-4 pt-0 pb-0 mb-2 border-0",
                             "outline-none focus:outline-none focus-visible:outline-none",
                             "focus:ring-0 focus-visible:ring-0 focus:shadow-none",
                             "focus:border-0 focus-visible:border-0",
                             "resize-none overflow-y-auto leading-tight",
-                            "bg-transparent text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:font-normal text-base",
+                            "bg-transparent text-foreground placeholder:text-shadow-foreground placeholder:text-base placeholder:font-normal text-base",
                         )}
                         value={value}
                         onChange={handleInputChange}
@@ -515,7 +370,8 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                 </div>
 
                 {/* PROMPT OPTIONS */}
-                <div className="absolute bottom-3 left-3 right-3">
+                {/* <div className="absolute bottom-3 left-3 right-3"> */}
+                <div>
                     <div className="flex items-center justify-between">
                         {/* LEFT ISLAND */}
                         <div className="flex items-center space-x-2 select-none ">
@@ -524,19 +380,14 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                 variant="outline"
                                 size="icon"
                                 className={cn(
-                                    "rounded-full h-8 w-8 flex-shrink-0 border-gray-200 p-0 transition-colors",
-                                    activeButton === "add" &&
-                                        "bg-gray-100 border-gray-300",
+                                    "rounded-full h-8 w-8 flex-shrink-0 border-accent-foreground p-0 transition-colors",
+                                    activeButton === "add" && "bg-accent",
                                 )}
                                 onClick={() => toggleButton("add")}
                                 disabled={disabled}
                             >
                                 <Plus
-                                    className={cn(
-                                        "h-4 w-4 text-gray-500",
-                                        activeButton === "add" &&
-                                            "text-gray-700",
-                                    )}
+                                    className={cn("h-4 w-4 text-foreground")}
                                 />
                                 <span className="sr-only">Add</span>
                             </Button>
@@ -545,23 +396,19 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                 type="button"
                                 variant="outline"
                                 className={cn(
-                                    "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
+                                    "rounded-full h-8 px-3 flex items-center gap-1.5 transition-colors",
                                     activeButton === "deepSearch" &&
-                                        "bg-gray-100 border-gray-300",
+                                        "bg-accent",
                                 )}
                                 onClick={() => toggleButton("deepSearch")}
                                 disabled={disabled}
                             >
                                 <Search
-                                    className={cn(
-                                        "h-4 w-4 text-gray-500",
-                                        activeButton === "deepSearch" &&
-                                            "text-gray-700",
-                                    )}
+                                    className={cn("h-4 w-4 text-foreground")}
                                 />
                                 <span
                                     className={cn(
-                                        "text-gray-900 text-sm",
+                                        "text-foreground text-sm",
                                         activeButton === "deepSearch" &&
                                             "font-medium",
                                     )}
@@ -574,23 +421,18 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                 type="button"
                                 variant="outline"
                                 className={cn(
-                                    "rounded-full h-8 px-3 flex items-center border-gray-200 gap-1.5 transition-colors",
-                                    activeButton === "think" &&
-                                        "bg-gray-100 border-gray-300",
+                                    "rounded-full h-8 px-3 flex items-center gap-1.5 transition-colors",
+                                    activeButton === "think" && "bg-accent",
                                 )}
                                 onClick={() => toggleButton("think")}
                                 disabled={disabled}
                             >
                                 <Lightbulb
-                                    className={cn(
-                                        "h-4 w-4 text-gray-500",
-                                        activeButton === "think" &&
-                                            "text-gray-700",
-                                    )}
+                                    className={cn("h-4 w-4 text-gray-500")}
                                 />
                                 <span
                                     className={cn(
-                                        "text-gray-900 text-sm",
+                                        "text-foreground text-sm",
                                         activeButton === "think" &&
                                             "font-medium",
                                     )}
@@ -609,7 +451,7 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                     setCurrentModel(value as ModelId);
                                     // TODO: handle support for different models
                                     setActiveButton("none");
-                                    focusTextarea();
+                                    focusTextArea();
                                 }}
                                 disabled={disabled}
                             >
@@ -634,7 +476,7 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                 <SelectContent>
                                     <SelectGroup>
                                         {Object.entries(AVAILABLE_MODELS).map(
-                                            ([id, model]) => {
+                                            ([model_id, model]) => {
                                                 // const model = { id: id, ...modelValues };
                                                 return (
                                                     <>
@@ -642,73 +484,82 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                                 {formatCreatorName(model.creator)}
                               </SelectLabel> */}
                                                         <SelectItem
-                                                            key={id}
-                                                            value={id}
+                                                            key={model_id}
+                                                            value={model_id}
                                                         >
-                                                            <div className="flex flex-row gap-2">
-                                                                <div className="">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <div className="pl-0.5">
-                                                                            {renderCreatorIcon(
-                                                                                model.creator,
-                                                                                24,
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="font-medium">
-                                                                            {
-                                                                                model.name
-                                                                            }
-                                                                        </span>
-                                                                        {model.status ===
-                                                                            ModelStatus.Active && (
-                                                                            <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
-                                                                                Active
-                                                                            </span>
-                                                                        )}
-                                                                        {model.status ===
-                                                                            ModelStatus.Alpha && (
-                                                                            <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
-                                                                                Alpha
-                                                                            </span>
-                                                                        )}
-                                                                        {model.status ===
-                                                                            ModelStatus.Beta && (
-                                                                            <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                                                                                Beta
-                                                                            </span>
-                                                                        )}
-                                                                        {model.status ===
-                                                                            ModelStatus.Deprecated && (
-                                                                            <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
-                                                                                Deprecated
-                                                                            </span>
+                                                            <div
+                                                                className="flex flex-row gap-2"
+                                                                key={model_id}
+                                                            >
+                                                                <div
+                                                                    className="flex items-center gap-1"
+                                                                    key={
+                                                                        model_id
+                                                                    }
+                                                                >
+                                                                    <div
+                                                                        className="pl-0.5"
+                                                                        key={
+                                                                            model_id
+                                                                        }
+                                                                    >
+                                                                        {renderCreatorIcon(
+                                                                            model.creator,
+                                                                            24,
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                                    <span className="font-medium">
                                                                         {
-                                                                            model.description
+                                                                            model.name
                                                                         }
-                                                                    </p>
-                                                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                                                        {model.capabilities.map(
-                                                                            (
-                                                                                capability,
-                                                                            ) => (
-                                                                                <Badge
-                                                                                    key={
-                                                                                        capability
-                                                                                    }
-                                                                                    variant="outline"
-                                                                                    className="mr-1"
-                                                                                >
-                                                                                    {
-                                                                                        capability
-                                                                                    }
-                                                                                </Badge>
-                                                                            ),
-                                                                        )}
-                                                                    </p>
+                                                                    </span>
+                                                                    {model.status ===
+                                                                        ModelStatus.Active && (
+                                                                        <span className="bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full">
+                                                                            Active
+                                                                        </span>
+                                                                    )}
+                                                                    {model.status ===
+                                                                        ModelStatus.Alpha && (
+                                                                        <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">
+                                                                            Alpha
+                                                                        </span>
+                                                                    )}
+                                                                    {model.status ===
+                                                                        ModelStatus.Beta && (
+                                                                        <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
+                                                                            Beta
+                                                                        </span>
+                                                                    )}
+                                                                    {model.status ===
+                                                                        ModelStatus.Deprecated && (
+                                                                        <span className="bg-gray-100 text-gray-800 text-xs px-1.5 py-0.5 rounded-full">
+                                                                            Deprecated
+                                                                        </span>
+                                                                    )}
                                                                 </div>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                                    {
+                                                                        model.description
+                                                                    }
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                                    {model.capabilities.map(
+                                                                        (
+                                                                            capability,
+                                                                        ) => (
+                                                                            <Badge
+                                                                                key={`${model_id}-${capability}`}
+                                                                                variant="outline"
+                                                                                className="mr-1"
+                                                                            >
+                                                                                {
+                                                                                    capability
+                                                                                }
+                                                                            </Badge>
+                                                                        ),
+                                                                    )}
+                                                                </p>
                                                             </div>
                                                         </SelectItem>
                                                     </>
@@ -745,8 +596,8 @@ export function ChatInput({ chatId, placeholder }: ChatInputProps) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     );
 }
 

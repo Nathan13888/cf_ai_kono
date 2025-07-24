@@ -1,14 +1,34 @@
 import {
     type Chat,
     type ChatId,
+    type ChatMetadata,
     type ModelId,
-    SendChatByIdResponse,
+    type SendChatByIdResponse,
+    chatMetadataSchema,
     chatSchema,
     sendChatByIdResponseSchema,
 } from "@kono/models";
-
+import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { client } from "../client";
+
+export async function getChatHistory(): Promise<ChatMetadata[] | null> {
+    const response = await client.chat.$get();
+    if (!response.ok) {
+        console.error("Failed to fetch chat history", await response.text());
+    }
+
+    // Parse the response
+    try {
+        const body = await response.json();
+        const chats = Value.Parse(Type.Array(chatMetadataSchema), body);
+        return chats;
+    } catch (e) {
+        console.error("Failed to parse chat history", e);
+        // TODO: fix error handling
+        return null;
+    }
+}
 
 export async function newChat(): Promise<string | null> {
     // Request for new chat

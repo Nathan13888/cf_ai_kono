@@ -1,12 +1,13 @@
-import { ChatScreen } from "@/components/dashboard/chat/chat"; // TODO: << move this import
-import { ChatInput } from "@/components/dashboard/chat/input"; // TODO: << move this import
-import { createFileRoute } from "@tanstack/react-router";
-
-// import "./chat.css"; // TODO: << is this needed?
-import { checkAuthenticated } from "@/lib/auth-client";
-import { getChatById } from "@/lib/chat/api";
+import { ChatScreen } from "@/components/dashboard/chat/chat";
+import ChatHeader from "@/components/dashboard/chat/header";
+import { ChatInput } from "@/components/dashboard/chat/input";
+import ChatMenu from "@/components/dashboard/chat/menu";
+import { getChatById, getChatHistory } from "@/lib/chat/api";
+import { useCreateChat, useNavigateToChat } from "@/lib/chat/route";
 import { useChatsStore } from "@/lib/chat/store";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 
 // Constants for layout calculations to account for the padding values
@@ -15,25 +16,21 @@ const BOTTOM_PADDING = 128; // pb-32 (8rem = 128px)
 const ADDITIONAL_OFFSET = 16; // Reduced offset for fine-tuning
 
 export const Route = createFileRoute("/chat/$id")({
-    loader: async ({ location, params }) => {
-        await checkAuthenticated(location);
-
-        const { id } = params;
-        return id;
-    },
     component: RouteComponent,
 });
 
 function RouteComponent() {
-    const chatId: string = Route.useLoaderData();
-    // console.warn("Chat ID", chatId);
+    const { id: chatId } = Route.useParams();
+    const createChat = useCreateChat();
 
     // const activeChat = useChatsStore((state) => state.currentChat);
     const currentModel = useChatsStore((state) => state.currentModel);
     const loadChat = useChatsStore((state) => state.loadChat);
+    const isMenuOpen = useChatsStore((state) => state.isMenuOpen);
 
-    const { isFetching, error } = useQuery({
-        queryKey: ["chat", chatId],
+    // Fetch chat id
+    const { isFetching: isFetchingChat, error: errorFetchingChat } = useQuery({
+        queryKey: ["chat", chatId], // TODO: refactor to constant
         queryFn: async () => {
             // console.warn("Fetching chat", chatId);
             console.debug("Fetching chat by ID:", chatId);
@@ -46,10 +43,24 @@ function RouteComponent() {
 
             return null; // data is loaded into store instead
         },
-        // refetchOnMount: true,
-        // refetchOnWindowFocus: true,
-        // refetchOnReconnect: false,
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: false,
     });
+
+    // Fetch chat history
+    const {
+        data: chatHistory,
+        isFetching: isFetchingChatHistory,
+        error: errorFetchingChatHistory,
+    } = useQuery({
+        queryKey: ["history"],
+        queryFn: async () => {
+            return await getChatHistory();
+        },
+    });
+
+    const navigateToChat = useNavigateToChat();
 
     // Check if device is mobile and get viewport height
     const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -97,29 +108,52 @@ function RouteComponent() {
     // };
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-x-hidden overflow-y-auto bg-gray-50">
-            {/* Shadow */}
-            {/* <div className="absolute inset-x-0 top-0 z-50 h-4 mt-12 pointer-events-none bg-gradient-to-b from-blue-400/20 to-transparent"></div> */}
+        <div className="flex flex-col flex-1 h-full overflow-hidden overflow-x-hidden">
+            <ChatHeader createChat={createChat} className="z-20 h-12" />
 
-            {/* TODO: fix bottom margin to match input height */}
-            {isFetching ? (
-                <div className="flex items-center justify-center h-full">
-                    <div className="text-gray-500">
-                        Waiting for chat data...
+            {/* Main Content Area */}
+            <div className="flex h-full overscroll-none" ref={mainContainerRef}>
+                {/* LEFT: Chat Menu - Overlay */}
+                <ChatMenu
+                    history={chatHistory ?? []}
+                    navigateToChat={navigateToChat}
+                    mainContainerRef={mainContainerRef}
+                    className={cn(
+                        // "absolute top-0 left-0",
+                        "flex",
+                        "h-full w-72 z-10 transition-transform duration-300 ease-out",
+                        isMenuOpen ? "translate-x-0" : "-translate-x-full",
+                    )}
+                />
+
+                {/* RIGHT: Chat Container */}
+                <div
+                    className={cn(
+                        "flex flex-col w-full justify-center items-start h-full",
+                    )}
+                >
+                    <div className="flex-1 w-full mt-12 mb-6 overflow-y-auto">
+                        {/* Shadow */}
+                        {/* <div className="absolute inset-x-0 top-0 z-50 h-4 mt-12 pointer-events-none bg-gradient-to-b from-blue-400/20 to-transparent"></div> */}
+
+                        {/* TODO: fix bottom margin to match input height */}
+                        <ChatScreen
+                            className="h-full max-w-3xl px-4 mx-auto"
+                            isFetching={isFetchingChat}
+                            error={errorFetchingChat}
+                            key={chatId}
+                        />
                     </div>
-                </div>
-            ) : (
-                <>
-                    <ChatScreen className="px-4 mb-48" />
 
-                    <div className="fixed bottom-0 left-0 right-0 px-4 pb-4 bg-gray-50">
+                    <div className="flex-shrink-0 w-full">
                         <ChatInput
                             chatId={chatId}
                             placeholder={"Ask anything..."}
+                            className="mb-3"
                         />
                     </div>
-                </>
-            )}
+                </div>
+            </div>
         </div>
     );
 }
