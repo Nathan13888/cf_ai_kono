@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileButton } from "@/components/ui/profile-button";
 import { useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
-import { Menu, PenSquare } from "lucide-react";
+import { Menu, PenSquare, X } from "lucide-react";
 
 export default function ChatHeader({
     createChat,
@@ -10,6 +10,7 @@ export default function ChatHeader({
 }: { createChat: () => Promise<void>; className?: string }) {
     const chatTitle = useChatsStore((state) => state.currentChat?.title);
 
+    const isMenuOpen = useChatsStore((state) => state.isMenuOpen);
     const toggleMenu = useChatsStore((state) => state.toggleMenu);
 
     return (
@@ -27,7 +28,11 @@ export default function ChatHeader({
                     className="w-8 h-8 rounded-full"
                     onClick={toggleMenu}
                 >
-                    <Menu className="w-5 h-5 text-gray-700" />
+                    {isMenuOpen ? (
+                        <X className="w-5 h-5 text-gray-700" />
+                    ) : (
+                        <Menu className="w-5 h-5 text-gray-700" />
+                    )}
                     <span className="sr-only">Menu</span>
                 </Button>
                 {/* TODO(ui): open and closed states */}
