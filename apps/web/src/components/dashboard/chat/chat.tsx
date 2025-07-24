@@ -2,6 +2,7 @@ import { useChatsStore } from "@/lib/chat/store";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import MemoizedMarkdown from "./markdown";
 
 // TODO: Re-write everything after updating models
 
@@ -54,21 +55,23 @@ export function ChatScreen({
                 <div className="flex flex-col h-full gap-2">
                     {activeChat?.messages.map((message, index) => (
                         <div
-                            key={message.id}
+                            key={`${message.id}-${message.content.length}`}
                             className={cn(
                                 "my-2 p-4",
-                                "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
+                                // "border-none hover:border-slate-500 hover:*:bg-accent border-t-2 border-b-2", // TODO(ui): fix shitty styling
                                 message.role === "user"
-                                    ? "ml-40 rounded-md bg-accent"
-                                    : "mr-5", // padding for alternating messages
+                                    ? "ml-auto mr-0 rounded-md bg-accent w-fit max-w-[calc(100%-10rem)] "
+                                    : "mr-5 w-fit max-w-[calc(100%-1.25rem)]", // padding for alternating messages
                             )}
                         >
                             {/* TODO(ui): hover show menu?? */}
                             {/* TODO(ui): s*/}
-                            {/* <div className="mb-2 text-sm text-gray-500">
-                                {new Date(message.timestamp).toLocaleString()}
-                            </div> */}
-                            <div className="">{message.content}</div>
+
+                            {/* TODO: virtual list */}
+                            <MemoizedMarkdown
+                                markdown={message.content}
+                                className="prose-sm prose max-w-none"
+                            />
                         </div>
                     ))}
                 </div>
