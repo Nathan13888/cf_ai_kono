@@ -2,6 +2,7 @@ import {
     type Chat,
     type ChatMetadata,
     type Message,
+    chatMetadataSchema,
     chatSchema,
     modelIdSchema,
     sendChatByIdRequestSchema,
@@ -18,6 +19,8 @@ import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
 import { chats, messages } from "../db/schema";
 import { modelIdToLM } from "../utils/chat";
+
+const DEFAULT_CHAT_HISTORY_COUNT = 20;
 
 // const newChatRequestSchema = newUserMessageSchema;
 const newChatRequestSchema = Type.Object({});
@@ -40,6 +43,83 @@ const newChatResponseSchema = chatSchema;
 const chatResponseSchema = chatSchema;
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
+    .get(
+        "/",
+        describeRoute({
+            summary: "Fetch chat history",
+            validateResponse: true,
+            responses: {
+                200: {
+                    description: "Chat history fetched",
+                    content: {
+                        "text/plain": {
+                            schema: resolver(Type.Array(chatMetadataSchema)),
+                        },
+                    },
+                },
+                401: {
+                    description: "Unauthorized",
+                },
+            },
+        }),
+        async (c) => {
+            // Check if user is authenticated
+            // TODO: refactor auth to middleware for all routes
+            const user = c.get("user");
+            if (!user) {
+                return c.json(
+                    {
+                        error: "Unauthorized",
+                    },
+                    401,
+                );
+            }
+
+            // Get optional query
+            // TODO:
+            const limitQuery = c.req.query("limit");
+            let limit = DEFAULT_CHAT_HISTORY_COUNT;
+            if (limitQuery) {
+                try {
+                    limit = Number.parseInt(limitQuery, 10);
+                } catch (e) {
+                    return c.json(
+                        {
+                            error: "Invalid limit parameter. Must be a number.",
+                        },
+                        400,
+                    );
+                }
+            }
+
+            if (limit <= 0 || limit > 100) {
+                return c.json(
+                    {
+                        error: "Invalid count parameter. Must be between 1 and 100.",
+                    },
+                    400,
+                );
+            }
+
+            // Fetch all chats for the user
+            const db = c.get("db");
+            const chatHistory: ChatMetadata[] = (
+                await db.query.chats.findMany({
+                    where: (chats, { eq }) => eq(chats.creatorId, user.id),
+                    orderBy: (chats, { desc }) => desc(chats.lastUpdatedAt),
+                    limit,
+                })
+            ).map((chat) => ({
+                id: chat.id,
+                title: chat.title ?? undefined,
+                creatorId: chat.creatorId,
+                createdAt: chat.createdAt,
+                lastUpdatedAt: chat.lastUpdatedAt,
+            }));
+
+            return c.json(chatHistory);
+        },
+    )
     .post(
         "/",
         describeRoute({
