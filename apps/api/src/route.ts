@@ -6,6 +6,7 @@ import auth from "./routes/auth";
 import chat from "./routes/chat";
 import message from "./routes/message";
 import models from "./routes/models";
+import upload from "./routes/upload";
 
 const app = new Hono()
     .use(
@@ -23,7 +24,8 @@ const app = new Hono()
     .route("/auth", auth)
     .route("/chat", chat)
     .route("/message", message)
-    .route("/models", models);
+    .route("/models", models)
+    .route("/upload", upload);
 
 export { app };
 export type AppType = typeof app;

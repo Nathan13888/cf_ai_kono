@@ -1,4 +1,4 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import { modelIdSchema } from "../model";
 import { chatIdSchema } from "./id";
 
@@ -11,7 +11,7 @@ export const messageStatusSchema = Type.Union([
     Type.Literal("completed"),
     Type.Literal("aborted"),
     Type.Literal("error"),
-])
+]);
 export type MessageStatus = Static<typeof messageStatusSchema>;
 
 export const messageRoleSchema = Type.Union([
@@ -23,7 +23,9 @@ export type MessageRole = Static<typeof messageRoleSchema>;
 
 export const newUserMessageSchema = Type.Object({
     /** Message content */
-    content: Type.String(), // TODO: Modify to support documents, etc. later
+    content: Type.String(),
+    /** Attachments */
+    attachments: Type.Optional(Type.Array(Type.String({ format: "base64" }))),
     /** Model ID */
     modelId: modelIdSchema,
     // TODO: Add other optional parameters like thinking
@@ -35,10 +37,7 @@ export const messageSchema = Type.Object({
     status: messageStatusSchema,
     /** Time for generation in milliseconds. Null means it was unknown for some reason. Undefined means it is still being generated. */
     generationTime: Type.Optional(
-        Type.Union([
-            Type.Integer({ minimum: 0 }),
-            Type.Null(),
-        ])
+        Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
     ),
     /** Message role */
     role: messageRoleSchema,
