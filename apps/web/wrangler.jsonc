@@ -1,18 +1,25 @@
 {
     "$schema": "../../node_modules/wrangler/config-schema.json",
     "name": "kono-web",
-    "main": "src/index.ts",
+    "pages_build_output_dir": "dist",
     "compatibility_date": "2025-04-03",
     "compatibility_flags": ["nodejs_compat"],
+    "send_metrics": false,
     "vars": {
         "VITE_UI_HOST": "https://kono.chat",
         "VITE_API_HOST": "https://api.kono.chat"
-    },
-    "routes": [
-        {
-            "pattern": "api.kono.chat",
-            "zone_name": "kono.chat",
-            "custom_domain": true
-        }
-    ]
+    }
+    // TODO: impl after vite update upstream https://developers.cloudflare.com/workers/vite-plugin/get-started/
+    // "route": {
+    //     "pattern": "kono.chat",
+    //     "zone_name": "kono.chat",
+    //     "custom_domain": true
+    // },
+    // "observability": {
+    //     "head_sampling_rate": 1,
+    //     "logs": {
+    //         "enabled": true
+    //     },
+    //     "enabled": true
+    // }
 }
