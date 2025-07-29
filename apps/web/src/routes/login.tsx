@@ -32,6 +32,9 @@ function RouteComponent() {
 
     const handleSignIn = async () => {
         console.log("Clicked sign in");
+        console.log("VITE_UI_HOST", import.meta.env.VITE_UI_HOST);
+        console.log("VITE_API_HOST", import.meta.env.VITE_API_HOST);
+
         await authClient.signIn.social(
             {
                 provider: "google",
