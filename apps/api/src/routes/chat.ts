@@ -96,8 +96,12 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 id: chat.id,
                 title: chat.title ?? undefined,
                 creatorId: chat.creatorId,
-                createdAt: chat.createdAt,
-                lastUpdatedAt: chat.lastUpdatedAt,
+                createdAt: !Number.isNaN(chat.createdAt.getTime())
+                    ? chat.createdAt.toISOString()
+                    : new Date().toISOString(),
+                lastUpdatedAt: !Number.isNaN(chat.lastUpdatedAt.getTime())
+                    ? chat.lastUpdatedAt.toISOString()
+                    : new Date().toISOString(),
             }));
 
             return c.json(chatHistory);
@@ -165,8 +169,16 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                                         id: r.id,
                                         title: r.title ?? undefined,
                                         creatorId: r.creatorId,
-                                        createdAt: r.createdAt,
-                                        lastUpdatedAt: r.lastUpdatedAt,
+                                        createdAt: !Number.isNaN(
+                                            r.createdAt.getTime(),
+                                        )
+                                            ? r.createdAt.toISOString()
+                                            : new Date().toISOString(),
+                                        lastUpdatedAt: !Number.isNaN(
+                                            r.lastUpdatedAt.getTime(),
+                                        )
+                                            ? r.lastUpdatedAt.toISOString()
+                                            : new Date().toISOString(),
                                     }
                                   : undefined,
                           )
@@ -192,7 +204,11 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                             generationTime: msg.generationTime,
                             role: msg.role,
                             content: msg.content,
-                            timestamp: msg.timestamp,
+                            timestamp:
+                                msg.timestamp &&
+                                !Number.isNaN(msg.timestamp.getTime())
+                                    ? msg.timestamp.toISOString()
+                                    : null,
                             modelId: Value.Parse(modelIdSchema, msg.modelId),
                             parentId: msg.parentId ?? undefined,
                             chatId: msg.chatId,
@@ -356,11 +372,11 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
             // Initialize new response
             // TODO: use transaction
             const newMessageId = crypto.randomUUID();
-            const newMessage: Message = {
+            const newMessageData = {
                 id: newMessageId,
-                status: "completed",
+                status: "completed" as const,
                 generationTime: undefined,
-                role: "user",
+                role: "user" as const,
                 content: content,
                 attachments: attachments,
                 timestamp: new Date(),
@@ -368,23 +384,33 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                 parentId: userMessages[0]?.id, // link to the last chat message
                 chatId: chatId,
             };
-            await db.insert(messages).values(newMessage);
+            await db.insert(messages).values(newMessageData);
 
             // Initialize new user message in history and db
             // TODO: use transaction
             const replyMessageId = crypto.randomUUID();
-            const replyMessage: Message = {
+            const replyMessageData = {
                 id: replyMessageId,
-                status: "ungenerated",
+                status: "ungenerated" as const,
                 generationTime: undefined,
-                role: "assistant",
+                role: "assistant" as const,
                 content: "",
                 timestamp: new Date(),
                 modelId: modelId, // requested model
                 parentId: newMessageId,
                 chatId: chatId,
             };
-            await db.insert(messages).values(replyMessage);
+            await db.insert(messages).values(replyMessageData);
+
+            // Create API response objects with string timestamps
+            const newMessage: Message = {
+                ...newMessageData,
+                timestamp: newMessageData.timestamp.toISOString(),
+            };
+            const replyMessage: Message = {
+                ...replyMessageData,
+                timestamp: replyMessageData.timestamp.toISOString(),
+            };
 
             return c.json({
                 new: newMessage,

@@ -12,9 +12,9 @@ export const chatMetadataSchema = Type.Object({
     /** Chat creator ID */
     creatorId: userIdSchema,
     /** Creation date */
-    createdAt: Type.Date(),
+    createdAt: Type.String({ format: "date-time" }),
     /** Last updated date */
-    lastUpdatedAt: Type.Date(),
+    lastUpdatedAt: Type.String({ format: "date-time" }),
 });
 export type ChatMetadata = Static<typeof chatMetadataSchema>;
 

@@ -1,4 +1,4 @@
-import type { ChatDurableObject } from "./objects/chat";
+import type { ChatDurableObject } from "./objects/streaming";
 
 // export type Bindings = CloudflareBindings;
 export interface Bindings

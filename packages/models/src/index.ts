@@ -10,5 +10,6 @@ FormatRegistry.Set("uuid", (value) =>
 
 export * from "./chat";
 export * from "./model";
+export * from "./transforms/date";
 export * from "./upload";
 export * from "./user";

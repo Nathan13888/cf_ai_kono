@@ -11,21 +11,25 @@ import {
 import { Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { client } from "../client";
-import { Attachment } from "./store";
+import type { Attachment } from "./store";
 
 export async function getChatHistory(): Promise<ChatMetadata[] | null> {
     const response = await client.chat.$get();
     if (!response.ok) {
         console.error("Failed to fetch chat history", await response.text());
+        return null;
     }
 
     // Parse the response
+    const text = await response.text();
     try {
-        const body = await response.json();
-        const chats = Value.Parse(Type.Array(chatMetadataSchema), body);
+        const chats = Value.Parse(
+            Type.Array(chatMetadataSchema),
+            JSON.parse(text),
+        );
         return chats;
     } catch (e) {
-        console.error("Failed to parse chat history", e);
+        console.error("Failed to parse chat history", e, text);
         // TODO: fix error handling
         return null;
     }
@@ -46,12 +50,12 @@ export async function getChatById(chatId: string): Promise<Chat | null> {
         return null;
     }
 
+    const text = await response.text();
     try {
-        const body = await response.json();
-        const parsed = Value.Parse(chatSchema, body);
+        const parsed = Value.Parse(chatSchema, JSON.parse(text));
         return parsed;
     } catch (e) {
-        console.error(`Failed to parse chat "${chatId}"`, e);
+        console.error(`Failed to parse chat "${chatId}"`, e, text);
         return null;
     }
 }
@@ -96,12 +100,15 @@ export async function messageChat(
     }
 
     // Update the current chat with the new message
+    const text = await response.text();
     try {
-        const body = await response.json();
-        const parsed = Value.Parse(sendChatByIdResponseSchema, body);
+        const parsed = Value.Parse(
+            sendChatByIdResponseSchema,
+            JSON.parse(text),
+        );
         return parsed;
     } catch (e) {
-        console.error(`Failed to parse response for chat "${id}"`, e);
+        console.error(`Failed to parse response for chat "${id}"`, e, text);
         // TODO: fix error handling
         return null;
     }

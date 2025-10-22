@@ -46,7 +46,7 @@ export const messageSchema = Type.Object({
     /** Message attachments */
     attachments: Type.Optional(Type.Array(Type.String())),
     /** Message timestamp */
-    timestamp: Type.Date(),
+    timestamp: Type.Union([Type.String({ format: "date-time" }), Type.Null()]),
     /** Model ID */
     modelId: modelIdSchema,
     /** Parent message ID */

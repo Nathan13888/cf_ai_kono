@@ -4,105 +4,130 @@ import {
     requestMessageByIdResponseSchema,
 } from "@kono/models";
 import { Type } from "@sinclair/typebox";
-import {
-    type CoreAssistantMessage,
-    type CoreMessage,
-    type CoreSystemMessage,
-    type CoreUserMessage,
+import type {
+    CoreAssistantMessage,
+    CoreMessage,
+    CoreSystemMessage,
+    CoreUserMessage,
     ImagePart,
-    type LanguageModelV1,
+    LanguageModelV1,
     TextPart,
-    streamText,
 } from "ai";
-import { eq } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/typebox";
-import { streamText as stream } from "hono/streaming";
 import type { AuthType } from "../auth";
 import type { Bindings } from "../bindings";
 import type { DbBindings } from "../db";
-import { messages } from "../db/schema";
+import type { ChatDurableObject } from "../objects/streaming";
 import { modelIdToLM } from "../utils/chat";
+
+// Utility function to check and recover from partial streams
+const checkStreamRecovery = async (
+    streamingNamespace: DurableObjectNamespace<ChatDurableObject>,
+    messageId: string,
+): Promise<{ needsRecovery: boolean; partialContent?: string }> => {
+    try {
+        const durableObjectId = streamingNamespace.idFromName(messageId);
+        const durableObjectStub = streamingNamespace.get(durableObjectId);
+
+        const recoveryRequest = new Request("https://do/recover", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messageId }),
+        });
+
+        const response = await durableObjectStub.fetch(recoveryRequest);
+        if (response.ok) {
+            const recoveryData = (await response.json()) as {
+                status: string;
+                content: string;
+                recovered: boolean;
+            };
+
+            return {
+                needsRecovery:
+                    recoveryData.recovered &&
+                    recoveryData.status !== "completed",
+                partialContent: recoveryData.content,
+            };
+        }
+    } catch (error) {
+        console.warn(`Recovery check failed for ${messageId}:`, error);
+    }
+
+    return { needsRecovery: false };
+};
 
 const streamResponse = async (
     c: Context,
     model: LanguageModelV1,
     messageHistory: CoreMessage[],
     newMessageId: string,
+    chatId: string,
+    userId: string,
 ) => {
-    const db = c.get("db");
+    const streamingNamespace = c.env.CHAT_DURABLE_OBJECT;
 
     console.log(
-        `Streaming response for message ${newMessageId} with model ${model.modelId.toString()} and history: ${JSON.stringify(messageHistory)}`,
+        `Streaming response for message ${newMessageId} with model ${model.modelId.toString()}`,
     );
 
-    // Start streaming response
-    // TODO(justy): check message history construction is correct
-    const { textStream } = await streamText({
-        model,
-        // TODO: Make system prompt configurable
-        system: "You are a helpful assistant.",
-        messages: messageHistory,
-    });
-    // TODO: Use other bits of the stream result for things like counting usage.
-    // const { usage } = result;
+    try {
+        // Get or create durable object stub for this message
+        // Using the message ID ensures the same Durable Object handles recovery/reconnection
+        const durableObjectId = streamingNamespace.idFromName(newMessageId);
+        const durableObjectStub = streamingNamespace.get(durableObjectId);
 
-    c.header("Content-Encoding", "Identity");
-    c.header("Content-Type", "text/plain; charset=utf-8");
-    return stream(
-        c,
-        async (stream) => {
-            // TODO(justy): implement Durable Objects for coordination of streaming response
-            const startTime = Date.now();
-            const message = [];
-            let messageLengthSinceLastSave = 0;
+        // Start streaming via durable object
+        const streamRequest = new Request("https://do/start", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "text/plain",
+            },
+            body: JSON.stringify({
+                messageId: newMessageId,
+                chatId,
+                userId,
+                model: {
+                    modelId: model.modelId,
+                    provider: model.provider,
+                },
+                messageHistory,
+            }),
+        });
 
-            await db
-                .update(messages)
-                .set({
-                    content: "",
-                    status: "in_progress",
-                    generationTime: Date.now() - startTime,
-                })
-                .where(eq(messages.id, newMessageId));
-            for await (const textPart of textStream) {
-                // TODO: implement aborting, remember to save to db
+        // Proxy the streaming response from the durable object
+        const response = await durableObjectStub.fetch(streamRequest);
 
-                // Update full message content
-                message.push(textPart);
-                messageLengthSinceLastSave += textPart.length;
+        if (!response.ok) {
+            const errorText = await response
+                .text()
+                .catch(() => "Unknown error");
+            throw new Error(
+                `Durable object streaming failed (${response.status}): ${errorText}`,
+            );
+        }
 
-                // Write the partial update to stream
-                await stream.write(textPart);
-
-                // Insert/update message in db
-                if (messageLengthSinceLastSave > 50) {
-                    messageLengthSinceLastSave = 0;
-                    // TODO: durable objects
-                }
-            }
-
-            // TODO(justy): fix logging
-            console.log("fully streamed message:", message.join(""));
-
-            // Finalize the message
-            await db
-                .update(messages)
-                .set({
-                    content: message.join(""),
-                    status: "completed",
-                    generationTime: Date.now() - startTime,
-                })
-                .where(eq(messages.id, newMessageId));
-        },
-        async (err, stream) => {
-            // TODO: handle error display to user
-            // TODO: Clean up properly if either client or model API drops
-            stream.writeln("An error occurred!");
-            console.error(err);
-        },
-    );
+        // Return the streamed response with proper headers
+        return new Response(response.body, {
+            status: 200,
+            headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Content-Encoding": "Identity",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+                "Transfer-Encoding": "chunked",
+            },
+        });
+    } catch (error) {
+        console.error(
+            `Stream setup failed for message ${newMessageId}:`,
+            error,
+        );
+        throw error;
+    }
 };
 
 const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
@@ -274,7 +299,69 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                     );
                 }
                 case "in_progress": {
-                    // TODO: use cloudflare durable objects
+                    // Check if we can recover or continue streaming from Durable Object
+                    const streamingNamespace = c.env.CHAT_DURABLE_OBJECT;
+                    const recovery = await checkStreamRecovery(
+                        streamingNamespace,
+                        messageId,
+                    );
+
+                    if (recovery.needsRecovery) {
+                        // Continue streaming from where we left off
+                        const model = modelIdToLM(
+                            existingMessage.modelId as ModelId,
+                        );
+                        if (!model) {
+                            return c.json(
+                                {
+                                    error: `Model ${existingMessage.modelId} not found`,
+                                },
+                                500,
+                            );
+                        }
+
+                        // Get message history (simplified for recovery)
+                        const rawMessages = await db.query.messages.findMany({
+                            where: (messages, { eq }) =>
+                                eq(messages.chatId, existingMessage.chatId),
+                        });
+
+                        const messageHistory: CoreMessage[] = rawMessages
+                            .filter((msg) => msg.status === "completed")
+                            .map((msg) => {
+                                switch (msg.role) {
+                                    case "user":
+                                        return {
+                                            role: "user",
+                                            content: msg.content,
+                                        } as CoreMessage;
+                                    case "assistant":
+                                        return {
+                                            role: "assistant",
+                                            content: msg.content,
+                                        } as CoreMessage;
+                                    case "system":
+                                        return {
+                                            role: "system",
+                                            content: msg.content,
+                                        } as CoreMessage;
+                                    default:
+                                        throw new Error(
+                                            `Unknown message role: ${msg.role}`,
+                                        );
+                                }
+                            });
+
+                        return streamResponse(
+                            c,
+                            model,
+                            messageHistory,
+                            messageId,
+                            existingMessage.chatId,
+                            user.id,
+                        );
+                    }
+
                     return c.json(
                         {
                             error: `Message with ID ${messageId} is already in progress`,
@@ -357,7 +444,14 @@ const app = new Hono<{ Bindings: Bindings; Variables: DbBindings & AuthType }>()
                         messageHistory.push(mapMessageToCoreMessage(msg));
                     }
 
-                    return streamResponse(c, model, messageHistory, messageId);
+                    return streamResponse(
+                        c,
+                        model,
+                        messageHistory,
+                        messageId,
+                        chatId,
+                        user.id,
+                    );
                 }
                 case "aborted": {
                     return c.json(

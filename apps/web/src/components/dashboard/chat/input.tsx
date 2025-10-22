@@ -18,14 +18,7 @@ import {
     ModelStatus,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import {
-    ArrowUp,
-    Lightbulb,
-    Loader2,
-    Plus,
-    Search,
-    XCircle,
-} from "lucide-react";
+import { ArrowUp, Loader2, Plus, XCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import {
     siAlibabadotcom,
@@ -344,7 +337,7 @@ export function ChatInput({
 
                 {/* PROMPT OPTIONS */}
                 {/* <div className="absolute bottom-3 left-3 right-3"> */}
-                <div>
+                <div className="">
                     <div className="flex items-center justify-between">
                         {/* LEFT ISLAND */}
                         <div className="flex items-center space-x-2 select-none ">
@@ -353,8 +346,8 @@ export function ChatInput({
                                 variant="outline"
                                 size="icon"
                                 className={cn(
-                                    "rounded-full h-8 w-8 flex-shrink-0 border-accent-foreground p-0 transition-colors",
-                                    activeButton === "add" && "bg-accent",
+                                    "rounded-full h-8 w-8 flex-shrink-0 p-0 transition-colors",
+                                    "bg-background hover:bg-accent/80 focus:bg-accent/80",
                                 )}
                                 onClick={() => toggleButton("add")}
                                 disabled={disabled}
@@ -365,6 +358,7 @@ export function ChatInput({
                                 <span className="sr-only">Add</span>
                             </Button>
 
+                            {/* 
                             <Button
                                 type="button"
                                 variant="outline"
@@ -412,7 +406,7 @@ export function ChatInput({
                                 >
                                     Think
                                 </span>
-                            </Button>
+                            </Button> */}
                         </div>
 
                         {/* RIGHT ISLAND */}
