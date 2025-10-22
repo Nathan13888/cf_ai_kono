@@ -9,7 +9,7 @@ const queryClient = new QueryClient();
 export const Route = createRootRoute({
     component: () => (
         <>
-            <main className="flex flex-col w-full h-screen overflow-hidden bg-gray-50 overscroll-none touch-none">
+            <main className="flex flex-col w-full h-screen overflow-auto bg-gray-50 overscroll-none touch-none">
                 <QueryClientProvider client={queryClient}>
                     <Outlet />
                 </QueryClientProvider>
@@ -18,17 +18,22 @@ export const Route = createRootRoute({
         </>
     ),
     notFoundComponent: () => {
-        // redirect({
-        //   to: FALLBACK_ROUTE,
-        // });
         return (
-            <div className="flex flex-col items-center justify-center w-full h-full">
-                <h1 className="text-2xl font-bold text-gray-500">
-                    404 Not Found
-                </h1>
-
-                <Link to="/">Go Home?</Link>
-                {/* <Link to={FALLBACK_ROUTE}>Go to chat</Link> */}
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="px-4 text-center">
+                    <h1 className="mb-2 text-4xl font-medium text-muted-foreground">
+                        404
+                    </h1>
+                    <p className="mb-6 text-foreground">
+                        This link doesn't exist
+                    </p>
+                    <Link
+                        to="/"
+                        className="text-sm text-primary hover:underline"
+                    >
+                        Go home
+                    </Link>
+                </div>
             </div>
         );
     },
